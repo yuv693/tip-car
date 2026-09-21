@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tip Car - Aao car book kria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Branding -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-2">
+            <div class="bg-emerald-600 text-white font-black px-3 py-1.5 rounded-lg text-xl tracking-wide shadow">
+                Tip Car
+            </div>
+            <span class="text-xs text-emerald-400 font-medium italic">"Aao car book kria"</span>
+        </div>
+        <div id="user-status-badge" class="hidden text-xs bg-emerald-950 border border-emerald-600 text-emerald-300 px-3 py-1 rounded-full font-semibold">
+            <i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1 animate-pulse"></i> Online
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-md w-full mx-auto p-4 flex flex-col justify-center">
+
+        <!-- STEP 1: Permanent Login Portal -->
+        <section id="login-section" class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-bold text-white mb-1">Welcome to Tip Car</h1>
+                <p class="text-xs text-slate-400">Pan-India Ride Sharing • <span class="text-emerald-400 font-semibold">"Aao car book kria"</span></p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Select Your Role</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setRole('customer')" id="role-cust-btn" class="py-2.5 px-4 rounded-xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm transition shadow">
+                            <i class="fa-solid fa-user mr-1"></i> Customer
+                        </button>
+                        <button onclick="setRole('driver')" id="role-drv-btn" class="py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition">
+                            <i class="fa-solid fa-car mr-1"></i> Driver
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Mobile Number (Permanent Login)</label>
+                    <div class="flex items-center bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5">
+                        <span class="text-slate-400 text-sm mr-2">+91</span>
+                        <input type="tel" id="mobile-input" maxlength="10" placeholder="Enter 10-digit number" class="bg-transparent w-full text-white text-sm focus:outline-none">
+                    </div>
+                </div>
+
+                <button onclick="handleLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm">
+                    Get Started / Login Securely
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 2: Customer Dashboard (Voice Search & Lowest Price) -->
+        <section id="customer-dashboard" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs text-emerald-400 font-bold bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-800">
+                        🎁 Joining Bonus: ₹10 Active
+                    </span>
+                    <span id="cust-phone-display" class="text-xs text-slate-400"></span>
+                </div>
+
+                <!-- Voice Search Button -->
+                <button onclick="triggerVoiceSearch()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-center space-x-3 transition transform active:scale-95">
+                    <div class="bg-white/20 p-2.5 rounded-full">
+                        <i class="fa-solid fa-microphone text-xl text-white animate-bounce"></i>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-base font-extrabold tracking-wide">"Aao car book kria"</div>
+                        <div class="text-[11px] text-emerald-100 opacity-90">Tap & speak destination for lowest price</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Available Rides List (Sorted Lowest Price First) -->
+            <div id="rides-list-container" class="space-y-3 hidden">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Lowest Priced Rides Available</h3>
+                
+                <div class="bg-slate-900 border border-emerald-500/50 p-4 rounded-xl flex justify-between items-center shadow-md">
+                    <div>
+                        <div class="font-bold text-white text-sm">Tip Car Share (Interstate Relay)</div>
+                        <div class="text-xs text-slate-400 mt-0.5">Fastest • 4-5 Car Relay Connected</div>
+                        <div class="text-emerald-400 font-bold text-sm mt-1">₹140 <span class="line-through text-slate-500 text-xs">₹180</span></div>
+                    </div>
+                    <button onclick="bookRide('Tip Car Share', '140')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs shadow">
+                        Book Now
+                    </button>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-white text-sm">Private Taxi Direct</div>
+                        <div class="text-xs text-slate-400 mt-0.5">Direct cab to destination door</div>
+                        <div class="text-emerald-400 font-bold text-sm mt-1">₹250</div>
+                    </div>
+                    <button onclick="bookRide('Private Taxi Direct', '250')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs shadow">
+                        Book Now
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 3: Active Ride & Live GPS Map Tracking (Pay After Ride) -->
+        <section id="active-ride-section" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-emerald-500/50 p-4 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-xs bg-amber-950 text-amber-400 border border-amber-800 px-2.5 py-0.5 rounded-full font-bold">
+                        🚗 Driver Assigned & On the Way
+                    </span>
+                    <span class="text-xs text-emerald-400 font-semibold">Zero Advance Risk</span>
+                </div>
+
+                <!-- Simulated Live Google-style GPS Map -->
+                <div class="w-full h-48 bg-slate-950 rounded-xl border border-slate-800 relative flex items-center justify-center overflow-hidden mb-3">
+                    <div class="absolute inset-0 opacity-30 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                    <!-- Animated Map Route Line -->
+                    <div class="absolute w-3/4 h-1 bg-emerald-500/40 rounded-full rotate-12"></div>
+                    <!-- Moving Car Marker -->
+                    <div id="map-car-marker" class="absolute transition-all duration-1000 bg-emerald-600 text-white p-2 rounded-full shadow-lg border-2 border-white text-xs">
+                        <i class="fa-solid fa-car-side"></i>
+                    </div>
+                    <!-- Pickup Pin -->
+                    <div class="absolute bottom-6 left-6 text-red-500 text-lg">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                </div>
+
+                <!-- Verified Driver & Vehicle Match Box -->
+                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center text-white font-bold text-sm">
+                                RK
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-white">Ramesh Kumar (Verified)</div>
+                                <div class="text-[11px] text-emerald-400 font-medium">★ 4.9 Driver Rating</div>
+                            </div>
+                        </div>
+                        <a href="tel:9876543210" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">
+                            <i class="fa-solid fa-phone mr-1"></i> Call
+                        </a>
+                    </div>
+                    <div class="pt-2 border-t border-slate-700/60 flex justify-between text-xs text-slate-300">
+                        <span>Car: <strong class="text-white">Maruti Dzire (White)</strong></span>
+                        <span>Plate: <strong class="text-emerald-400">GJ-11-AB-1234</strong></span>
+                    </div>
+                </div>
+
+                <!-- Pay After Ride Notice -->
+                <div class="mt-3 p-3 bg-slate-950 rounded-xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400">Payment Status: <span class="text-amber-400 font-bold">Pay Cash/UPI After Ride Completion</span></div>
+                </div>
+
+                <button onclick="finishRide()" class="mt-3 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Emergency SOS / Complete Ride
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 4: Driver Dashboard -->
+        <section id="driver-dashboard" class="hidden space-y-4">
+            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-sm font-bold text-white">Driver Panel</h2>
+                        <p class="text-[11px] text-slate-400" id="drv-phone-display"></p>
+                    </div>
+                    <!-- Status Toggle (Green / Red) -->
+                    <button onclick="toggleDriverStatus()" id="driver-status-toggle" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow transition">
+                        🟢 Online (Ready)
+                    </button>
+                </div>
+
+                <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400 mb-1">Annual Insurance Reward Tracker</div>
+                    <div class="text-lg font-black text-emerald-400">420 / 1,000 Rides</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Complete 1,000 rides/year to unlock free insurance reward</div>
+                </div>
+
+                <div id="driver-incoming-request" class="p-4 bg-emerald-950/40 border border-emerald-600/50 rounded-xl space-y-2 hidden">
+                    <div class="text-xs font-bold text-emerald-400">🔔 New Ride Request Nearby!</div>
+                    <div class="text-xs text-slate-300">Pickup: Porbandar Main Square</div>
+                    <button onclick="acceptRideByDriver()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs">
+                        Accept & Navigate to User
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer Simple -->
+    <footer class="text-center py-3 text-[11px] text-slate-500 border-t border-slate-900">
+        Tip Car • Free Ride-Sharing Platform • "Aao car book kria"
+    </footer>
+
+    <!-- Script Logic -->
+    <script>
+        let currentRole = 'customer';
+        let isDriverOnline = true;
+
+        function setRole(role) {
+            currentRole = role;
+            if(role === 'customer') {
+                document.getElementById('role-cust-btn').className = "py-2.5 px-4 rounded-xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm shadow";
+                document.getElementById('role-drv-btn').className = "py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm";
+            } else {
+                document.getElementById('role-drv-btn').className = "py-2.5 px-4 rounded-xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm shadow";
+                document.getElementById('role-cust-btn').className = "py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm";
+            }
+        }
+
+        function handleLogin() {
+            const mobile = document.getElementById('mobile-input').value;
+            if(mobile.length < 10) {
+                alert('Please enter a valid 10-digit mobile number.');
+                return;
+            }
+            
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('user-status-badge').classList.remove('hidden');
+
+            if(currentRole === 'customer') {
+                document.getElementById('customer-dashboard').classList.remove('hidden');
+                document.getElementById('cust-phone-display').innerText = '+91 ' + mobile;
+            } else {
+                document.getElementById('driver-dashboard').classList.remove('hidden');
+                document.getElementById('drv-phone-display').innerText = '+91 ' + mobile;
+                setTimeout(() => {
+                    document.getElementById('driver-incoming-request').classList.remove('hidden');
+                }, 3000);
+            }
+        }
+
+        function triggerVoiceSearch() {
+            alert('Voice Captured: "Aao car book kria" 🎤\nSorting lowest price rides for you...');
+            document.getElementById('rides-list-container').classList.remove('hidden');
+        }
+
+        function bookRide(type, price) {
+            alert(type + ' booked successfully for ₹' + price + '!\nNo advance payment required. Pay after ride completion.');
+            document.getElementById('customer-dashboard').classList.add('hidden');
+            document.getElementById('active-ride-section').classList.remove('hidden');
+        }
+
+        function toggleDriverStatus() {
+            isDriverOnline = !isDriverOnline;
+            const btn = document.getElementById('driver-status-toggle');
+            if(isDriverOnline) {
+                btn.className = "bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow transition";
+                btn.innerText = "🟢 Online (Ready)";
+            } else {
+                btn.className = "bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow transition";
+                btn.innerText = "🔴 Offline";
+            }
+        }
+
+        function acceptRideByDriver() {
+            alert('Ride accepted! Navigate to user pickup location.');
+            document.getElementById('driver-incoming-request').classList.add('hidden');
+        }
+
+        function finishRide() {
+            alert('Ride completed safely! Payment collected via Cash/UPI. Thank you for using Tip Car.');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
