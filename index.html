@@ -4,275 +4,611 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tip Car - Aao car book kria</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+    <style>
+        :root {
+            --primary: #008272;
+            --secondary: #0f172a;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --muted: #64748b;
+        }
 
-    <!-- Header / Branding -->
-    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-2">
-            <div class="bg-emerald-600 text-white font-black px-3 py-1.5 rounded-lg text-xl tracking-wide shadow">
-                Tip Car
-            </div>
-            <span class="text-xs text-emerald-400 font-medium italic">"Aao car book kria"</span>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--secondary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .brand-logo-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-main {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2dd4bf;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-sub {
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .user-badge {
+            font-size: 0.85rem;
+            background: #1e293b;
+            border: 1px solid #334155;
+            padding: 5px 12px;
+            border-radius: 20px;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 1.5rem auto;
+            padding: 0 1rem;
+            width: 100%;
+            flex: 1;
+            padding-bottom: 70px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h2 {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0,130,114,0.15);
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-with-icon button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 13px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: #e2e8f0;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .mode-btn.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .ride-card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .ride-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .route-info {
+            font-weight: bold;
+            font-size: 1.05rem;
+            color: var(--secondary);
+        }
+
+        .price-tag {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1.15rem;
+        }
+
+        .driver-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .driver-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .meta-text {
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .book-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .jugad-banner {
+            background: #f0fdf4;
+            border: 1px dashed #10b981;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #065f46;
+            margin-bottom: 1rem;
+        }
+
+        .sos-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 1px solid #e2e8f0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--muted);
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .nav-item span {
+            display: block;
+            font-size: 1.2rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-logo-container">
+            <div class="logo-main">🚗 Tip Car</div>
+            <div class="logo-sub">आओ कार बुक क्रिया (Voice-First)</div>
         </div>
-        <div id="user-status-badge" class="hidden text-xs bg-emerald-950 border border-emerald-600 text-emerald-300 px-3 py-1 rounded-full font-semibold">
-            <i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1 animate-pulse"></i> Online
+        <div id="userHeaderProfile" class="user-badge hidden">
+            <span id="headerName">User</span>
+            <button onclick="logout()" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold;">⏻</button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-grow max-w-md w-full mx-auto p-4 flex flex-col justify-center">
+    <div class="container">
+        
+        <!-- ROLE SELECTOR SWITCH -->
+        <div class="mode-switcher">
+            <button class="mode-btn active" id="userModeBtn" onclick="switchRole('user')">👤 User View</button>
+            <button class="mode-btn" id="driverModeBtn" onclick="switchRole('driver')">🚙 Driver / Owner</button>
+        </div>
 
-        <!-- STEP 1: Permanent Login Portal -->
-        <section id="login-section" class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <div class="text-center mb-6">
-                <h1 class="text-2xl font-bold text-white mb-1">Welcome to Tip Car</h1>
-                <p class="text-xs text-slate-400">Pan-India Ride Sharing • <span class="text-emerald-400 font-semibold">"Aao car book kria"</span></p>
+        <!-- ================= USER VIEW ================= -->
+        <div id="userSection">
+            
+            <!-- AUTH CARD (Persistent Login) -->
+            <div id="userAuthCard" class="card">
+                <h2>User Sign In / Registration</h2>
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" id="userNameInput" placeholder="Enter full name">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="userPhoneInput" placeholder="10-digit mobile number">
+                </div>
+                <button class="btn-primary" onclick="loginUser()">Verify & Continue (₹50 Bonus)</button>
             </div>
 
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Select Your Role</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="setRole('customer')" id="role-cust-btn" class="py-2.5 px-4 rounded-xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm transition shadow">
-                            <i class="fa-solid fa-user mr-1"></i> Customer
-                        </button>
-                        <button onclick="setRole('driver')" id="role-drv-btn" class="py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm transition">
-                            <i class="fa-solid fa-car mr-1"></i> Driver
-                        </button>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-medium text-slate-300 mb-1">Mobile Number (Permanent Login)</label>
-                    <div class="flex items-center bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5">
-                        <span class="text-slate-400 text-sm mr-2">+91</span>
-                        <input type="tel" id="mobile-input" maxlength="10" placeholder="Enter 10-digit number" class="bg-transparent w-full text-white text-sm focus:outline-none">
-                    </div>
-                </div>
-
-                <button onclick="handleLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm">
-                    Get Started / Login Securely
-                </button>
-            </div>
-        </section>
-
-        <!-- STEP 2: Customer Dashboard (Voice Search & Lowest Price) -->
-        <section id="customer-dashboard" class="hidden space-y-4">
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs text-emerald-400 font-bold bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-800">
-                        🎁 Joining Bonus: ₹10 Active
-                    </span>
-                    <span id="cust-phone-display" class="text-xs text-slate-400"></span>
-                </div>
-
-                <!-- Voice Search Button -->
-                <button onclick="triggerVoiceSearch()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white p-4 rounded-2xl shadow-lg flex items-center justify-center space-x-3 transition transform active:scale-95">
-                    <div class="bg-white/20 p-2.5 rounded-full">
-                        <i class="fa-solid fa-microphone text-xl text-white animate-bounce"></i>
-                    </div>
-                    <div class="text-left">
-                        <div class="text-base font-extrabold tracking-wide">"Aao car book kria"</div>
-                        <div class="text-[11px] text-emerald-100 opacity-90">Tap & speak destination for lowest price</div>
-                    </div>
-                </button>
-            </div>
-
-            <!-- Available Rides List (Sorted Lowest Price First) -->
-            <div id="rides-list-container" class="space-y-3 hidden">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Lowest Priced Rides Available</h3>
+            <!-- SEARCH DASHBOARD -->
+            <div id="userDashboard" class="hidden">
                 
-                <div class="bg-slate-900 border border-emerald-500/50 p-4 rounded-xl flex justify-between items-center shadow-md">
-                    <div>
-                        <div class="font-bold text-white text-sm">Tip Car Share (Interstate Relay)</div>
-                        <div class="text-xs text-slate-400 mt-0.5">Fastest • 4-5 Car Relay Connected</div>
-                        <div class="text-emerald-400 font-bold text-sm mt-1">₹140 <span class="line-through text-slate-500 text-xs">₹180</span></div>
-                    </div>
-                    <button onclick="bookRide('Tip Car Share', '140')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs shadow">
-                        Book Now
-                    </button>
+                <div style="background: #ecfdf5; border: 1px solid #10b981; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🎉 Welcome Bonus Claimed: <strong>₹50 Wallet Credit</strong></span>
+                    <button class="sos-btn" onclick="triggerSOS()">🚨 SOS Emergency</button>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
-                    <div>
-                        <div class="font-bold text-white text-sm">Private Taxi Direct</div>
-                        <div class="text-xs text-slate-400 mt-0.5">Direct cab to destination door</div>
-                        <div class="text-emerald-400 font-bold text-sm mt-1">₹250</div>
-                    </div>
-                    <button onclick="bookRide('Private Taxi Direct', '250')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg text-xs shadow">
-                        Book Now
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- STEP 3: Active Ride & Live GPS Map Tracking (Pay After Ride) -->
-        <section id="active-ride-section" class="hidden space-y-4">
-            <div class="bg-slate-900 border border-emerald-500/50 p-4 rounded-2xl relative overflow-hidden">
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-xs bg-amber-950 text-amber-400 border border-amber-800 px-2.5 py-0.5 rounded-full font-bold">
-                        🚗 Driver Assigned & On the Way
-                    </span>
-                    <span class="text-xs text-emerald-400 font-semibold">Zero Advance Risk</span>
-                </div>
-
-                <!-- Simulated Live Google-style GPS Map -->
-                <div class="w-full h-48 bg-slate-950 rounded-xl border border-slate-800 relative flex items-center justify-center overflow-hidden mb-3">
-                    <div class="absolute inset-0 opacity-30 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]"></div>
-                    <!-- Animated Map Route Line -->
-                    <div class="absolute w-3/4 h-1 bg-emerald-500/40 rounded-full rotate-12"></div>
-                    <!-- Moving Car Marker -->
-                    <div id="map-car-marker" class="absolute transition-all duration-1000 bg-emerald-600 text-white p-2 rounded-full shadow-lg border-2 border-white text-xs">
-                        <i class="fa-solid fa-car-side"></i>
-                    </div>
-                    <!-- Pickup Pin -->
-                    <div class="absolute bottom-6 left-6 text-red-500 text-lg">
-                        <i class="fa-solid fa-location-dot"></i>
-                    </div>
-                </div>
-
-                <!-- Verified Driver & Vehicle Match Box -->
-                <div class="bg-slate-800/80 p-3.5 rounded-xl border border-slate-700 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center text-white font-bold text-sm">
-                                RK
-                            </div>
-                            <div>
-                                <div class="text-xs font-bold text-white">Ramesh Kumar (Verified)</div>
-                                <div class="text-[11px] text-emerald-400 font-medium">★ 4.9 Driver Rating</div>
-                            </div>
+                <div class="card">
+                    <h2>Find Inter-State Ride</h2>
+                    <div class="form-group">
+                        <label>From Location (GPS Auto-detected)</label>
+                        <div class="input-with-icon">
+                            <input type="text" id="searchFrom" value="Porbandar, Gujarat">
+                            <button onclick="autoDetectGPS()">📍</button>
                         </div>
-                        <a href="tel:9876543210" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow">
-                            <i class="fa-solid fa-phone mr-1"></i> Call
-                        </a>
                     </div>
-                    <div class="pt-2 border-t border-slate-700/60 flex justify-between text-xs text-slate-300">
-                        <span>Car: <strong class="text-white">Maruti Dzire (White)</strong></span>
-                        <span>Plate: <strong class="text-emerald-400">GJ-11-AB-1234</strong></span>
+                    <div class="form-group">
+                        <label>To Destination</label>
+                        <div class="input-with-icon">
+                            <input type="text" id="searchTo" placeholder="e.g. Mumbai, Maharashtra">
+                            <button onclick="startVoiceSearch('searchTo')">🎙️</button>
+                        </div>
                     </div>
+                    <div class="form-group">
+                        <label>Date & Passengers</label>
+                        <input type="date" id="searchDate" value="2026-09-24">
+                    </div>
+                    <div class="form-group">
+                        <label>Extra Luggage</label>
+                        <select id="luggageSelect">
+                            <option value="No Extra Luggage">No Extra Luggage (Standard)</option>
+                            <option value="1 Large Bag (+₹100)">1 Large Bag (+₹100)</option>
+                            <option value="Heavy Carrier Bags (+₹200)">Heavy Carrier Bags (+₹200)</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="searchRides()">Search Rides (Lowest Price First)</button>
                 </div>
 
-                <!-- Pay After Ride Notice -->
-                <div class="mt-3 p-3 bg-slate-950 rounded-xl border border-slate-800 text-center">
-                    <div class="text-xs text-slate-400">Payment Status: <span class="text-amber-400 font-bold">Pay Cash/UPI After Ride Completion</span></div>
+                <!-- JUGAD PLAN BANNER -->
+                <div class="jugad-banner">
+                    💡 <strong>Tip Car Jugad Plan Active:</strong> Long inter-state routes are split into state-border connection cars to save cost and maximize safety!
                 </div>
 
-                <button onclick="finishRide()" class="mt-3 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 rounded-xl text-xs transition">
-                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Emergency SOS / Complete Ride
-                </button>
+                <div id="searchResultsContainer">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--secondary);">Available Rides</h3>
+                    <div id="rideResultsList"></div>
+                </div>
+
             </div>
-        </section>
+        </div>
 
-        <!-- STEP 4: Driver Dashboard -->
-        <section id="driver-dashboard" class="hidden space-y-4">
-            <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h2 class="text-sm font-bold text-white">Driver Panel</h2>
-                        <p class="text-[11px] text-slate-400" id="drv-phone-display"></p>
+        <!-- ================= DRIVER VIEW ================= -->
+        <div id="driverSection" class="hidden">
+            
+            <div id="driverAuthCard" class="card">
+                <h2>Driver / Owner Registration</h2>
+                <div class="form-group">
+                    <label>Owner Name</label>
+                    <input type="text" id="dName" placeholder="Full Name">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="dPhone" placeholder="Mobile Number">
+                </div>
+                <div class="form-group">
+                    <label>Car Name & Model</label>
+                    <input type="text" id="dCarName" placeholder="e.g. Maruti Ertiga - White">
+                </div>
+                <div class="form-group">
+                    <label>Seating Capacity</label>
+                    <input type="number" id="dSeats" placeholder="e.g. 4">
+                </div>
+                <div class="form-group">
+                    <label>License Number</label>
+                    <input type="text" id="dLicense" placeholder="DL Number">
+                </div>
+                <div class="form-group">
+                    <label>Car Vehicle Number</label>
+                    <input type="text" id="dCarNo" placeholder="e.g. GJ-05-AB-1234">
+                </div>
+                <button class="btn-primary" onclick="registerDriver()">Save Profile & Start Dashboard</button>
+            </div>
+
+            <div id="driverDashboard" class="hidden">
+                <div class="card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                    <h2 style="color: #166534;">🚙 AI Driver Assistant Active</h2>
+                    <p style="font-size: 0.85rem; color: #15803d; margin-bottom: 10px;">
+                        Smart matching connected! Passengers found for Porbandar ➔ Rajkot route. Commission: ₹10 per passenger.
+                    </p>
+                    <button class="btn-primary" style="background: #16a34a;" onclick="acceptAiBatch()">Accept Passenger Batch (Earn ₹360)</button>
+                </div>
+
+                <div class="card">
+                    <h2>Insurance Reward Program</h2>
+                    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 10px;">
+                        Complete 1,000 successful user rides on Tip Car and get your car insurance fully sponsored by us!
+                    </p>
+                    <div style="background: #e2e8f0; border-radius: 8px; height: 10px; overflow:hidden;">
+                        <div style="background: var(--primary); width: 35%; height: 100%;"></div>
                     </div>
-                    <!-- Status Toggle (Green / Red) -->
-                    <button onclick="toggleDriverStatus()" id="driver-status-toggle" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow transition">
-                        🟢 Online (Ready)
-                    </button>
-                </div>
-
-                <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 text-center">
-                    <div class="text-xs text-slate-400 mb-1">Annual Insurance Reward Tracker</div>
-                    <div class="text-lg font-black text-emerald-400">420 / 1,000 Rides</div>
-                    <div class="text-[10px] text-slate-500 mt-1">Complete 1,000 rides/year to unlock free insurance reward</div>
-                </div>
-
-                <div id="driver-incoming-request" class="p-4 bg-emerald-950/40 border border-emerald-600/50 rounded-xl space-y-2 hidden">
-                    <div class="text-xs font-bold text-emerald-400">🔔 New Ride Request Nearby!</div>
-                    <div class="text-xs text-slate-300">Pickup: Porbandar Main Square</div>
-                    <button onclick="acceptRideByDriver()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs">
-                        Accept & Navigate to User
-                    </button>
+                    <p style="font-size: 0.75rem; color: var(--muted); margin-top: 5px;">Progress: 350 / 1000 rides completed</p>
                 </div>
             </div>
-        </section>
 
-    </main>
+        </div>
 
-    <!-- Footer Simple -->
-    <footer class="text-center py-3 text-[11px] text-slate-500 border-t border-slate-900">
-        Tip Car • Free Ride-Sharing Platform • "Aao car book kria"
-    </footer>
+    </div>
 
-    <!-- Script Logic -->
+    <!-- BOTTOM APP BAR -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('search')">
+            <span>🔍</span>Search
+        </button>
+        <button class="nav-item" onclick="switchTab('rides')">
+            <span>🚗</span>My Rides
+        </button>
+        <button class="nav-item" onclick="switchTab('inbox')">
+            <span>💬</span>Inbox
+        </button>
+        <button class="nav-item" onclick="switchTab('profile')">
+            <span>👤</span>Profile
+        </button>
+    </div>
+
     <script>
-        let currentRole = 'customer';
-        let isDriverOnline = true;
+        window.onload = function() {
+            let savedUser = localStorage.getItem('tip_user');
+            if(savedUser) {
+                let data = JSON.parse(savedUser);
+                document.getElementById('userNameInput').value = data.name;
+                document.getElementById('userPhoneInput').value = data.phone;
+                loginUser(true);
+            }
 
-        function setRole(role) {
-            currentRole = role;
-            if(role === 'customer') {
-                document.getElementById('role-cust-btn').className = "py-2.5 px-4 rounded-xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm shadow";
-                document.getElementById('role-drv-btn').className = "py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm";
+            let savedDriver = localStorage.getItem('tip_driver');
+            if(savedDriver) {
+                let data = JSON.parse(savedDriver);
+                document.getElementById('dName').value = data.name;
+                document.getElementById('dPhone').value = data.phone;
+                registerDriver(true);
+            }
+            searchRides();
+        };
+
+        function switchRole(role) {
+            if(role === 'user') {
+                document.getElementById('userModeBtn').classList.add('active');
+                document.getElementById('driverModeBtn').classList.remove('active');
+                document.getElementById('userSection').classList.remove('hidden');
+                document.getElementById('driverSection').classList.add('hidden');
             } else {
-                document.getElementById('role-drv-btn').className = "py-2.5 px-4 rounded-xl border border-emerald-500 bg-emerald-600 text-white font-bold text-sm shadow";
-                document.getElementById('role-cust-btn').className = "py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 font-bold text-sm";
+                document.getElementById('driverModeBtn').classList.add('active');
+                document.getElementById('userModeBtn').classList.remove('active');
+                document.getElementById('driverSection').classList.remove('hidden');
+                document.getElementById('userSection').classList.add('hidden');
             }
         }
 
-        function handleLogin() {
-            const mobile = document.getElementById('mobile-input').value;
-            if(mobile.length < 10) {
-                alert('Please enter a valid 10-digit mobile number.');
+        function loginUser(isAuto = false) {
+            let name = document.getElementById('userNameInput').value;
+            let phone = document.getElementById('userPhoneInput').value;
+            if(!name || !phone) {
+                if(!isAuto) alert('Please enter name and mobile number');
                 return;
             }
-            
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('user-status-badge').classList.remove('hidden');
+            localStorage.setItem('tip_user', JSON.stringify({name, phone}));
+            document.getElementById('userAuthCard').classList.add('hidden');
+            document.getElementById('userDashboard').classList.remove('hidden');
+            document.getElementById('userHeaderProfile').classList.remove('hidden');
+            document.getElementById('headerName').innerText = name;
+        }
 
-            if(currentRole === 'customer') {
-                document.getElementById('customer-dashboard').classList.remove('hidden');
-                document.getElementById('cust-phone-display').innerText = '+91 ' + mobile;
-            } else {
-                document.getElementById('driver-dashboard').classList.remove('hidden');
-                document.getElementById('drv-phone-display').innerText = '+91 ' + mobile;
-                setTimeout(() => {
-                    document.getElementById('driver-incoming-request').classList.remove('hidden');
-                }, 3000);
+        function logout() {
+            localStorage.removeItem('tip_user');
+            document.getElementById('userAuthCard').classList.remove('hidden');
+            document.getElementById('userDashboard').classList.add('hidden');
+            document.getElementById('userHeaderProfile').classList.add('hidden');
+        }
+
+        function registerDriver(isAuto = false) {
+            let name = document.getElementById('dName').value;
+            let phone = document.getElementById('dPhone').value;
+            if(!name || !phone) {
+                if(!isAuto) alert('Please fill required driver details');
+                return;
             }
+            localStorage.setItem('tip_driver', JSON.stringify({name, phone}));
+            document.getElementById('driverAuthCard').classList.add('hidden');
+            document.getElementById('driverDashboard').classList.remove('hidden');
         }
 
-        function triggerVoiceSearch() {
-            alert('Voice Captured: "Aao car book kria" 🎤\nSorting lowest price rides for you...');
-            document.getElementById('rides-list-container').classList.remove('hidden');
+        function autoDetectGPS() {
+            alert('GPS Active: Location set to Porbandar, Gujarat automatically.');
+            document.getElementById('searchFrom').value = "Porbandar, Gujarat";
         }
 
-        function bookRide(type, price) {
-            alert(type + ' booked successfully for ₹' + price + '!\nNo advance payment required. Pay after ride completion.');
-            document.getElementById('customer-dashboard').classList.add('hidden');
-            document.getElementById('active-ride-section').classList.remove('hidden');
+        function startVoiceSearch(fieldId) {
+            let sampleDestinations = ["Mumbai, Maharashtra", "Ahmedabad, Gujarat", "Rajkot, Gujarat", "Jaipur, Rajasthan"];
+            let randomDest = sampleDestinations[Math.floor(Math.random() * sampleDestinations.length)];
+            document.getElementById(fieldId).value = randomDest;
+            alert('Voice Input Captured (Voice-First): ' + randomDest);
+            searchRides();
         }
 
-        function toggleDriverStatus() {
-            isDriverOnline = !isDriverOnline;
-            const btn = document.getElementById('driver-status-toggle');
-            if(isDriverOnline) {
-                btn.className = "bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow transition";
-                btn.innerText = "🟢 Online (Ready)";
-            } else {
-                btn.className = "bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow transition";
-                btn.innerText = "🔴 Offline";
-            }
+        function searchRides() {
+            let from = document.getElementById('searchFrom').value;
+            let to = document.getElementById('searchTo').value || "Mumbai, Maharashtra";
+            let luggage = document.getElementById('luggageSelect').value;
+            let luggageCost = luggage.includes('100') ? 100 : (luggage.includes('200') ? 200 : 0);
+
+            let rides = [
+                { driver: "Dadhichi", car: "Maruti Ertiga", price: 1290 + luggageCost, rating: 4.9, time: "07:30 AM", seats: 3 },
+                { driver: "Abhijeet", car: "Hyundai i20", price: 1430 + luggageCost, rating: 5.0, time: "06:00 AM", seats: 2 },
+                { driver: "Azim", car: "Toyota Innova", price: 1450 + luggageCost, rating: 4.8, time: "08:00 PM", seats: 4 }
+            ];
+
+            rides.sort((a,b) => a.price - b.price);
+
+            let html = "";
+            rides.forEach(r => {
+                let initials = r.driver.slice(0,2).toUpperCase();
+                html += `
+                    <div class="ride-card">
+                        <div class="ride-header">
+                            <span class="route-info">${from} ➔ ${to}</span>
+                            <span class="price-tag">₹${r.price}.00</span>
+                        </div>
+                        <div class="meta-text">🕒 ${r.time} • ${r.seats} Seats left • Verified AC Cab</div>
+                        <div class="driver-box">
+                            <div class="driver-info">
+                                <div class="avatar">${initials}</div>
+                                <div>
+                                    <strong>${r.driver}</strong>
+                                    <div class="meta-text">${r.car} • ⭐ ${r.rating}</div>
+                                </div>
+                            </div>
+                            <button class="book-btn" onclick="bookRide('${r.driver}', ${r.price})">Book Seat</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('rideResultsList').innerHTML = html;
         }
 
-        function acceptRideByDriver() {
-            alert('Ride accepted! Navigate to user pickup location.');
-            document.getElementById('driver-incoming-request').classList.add('hidden');
+        function bookRide(driverName, price) {
+            alert(`Booking Confirmed on Tip Car!\n\nDriver: ${driverName}\nTotal Fare: ₹${price}\n\n📲 WhatsApp confirmation message sent successfully!`);
         }
 
-        function finishRide() {
-            alert('Ride completed safely! Payment collected via Cash/UPI. Thank you for using Tip Car.');
-            location.reload();
+        function triggerSOS() {
+            alert('🚨 EMERGENCY SOS ACTIVATED!\nPolice and local authorities alerted with live GPS coordinates.');
+        }
+
+        function acceptAiBatch() {
+            alert('Batch Accepted! Passengers assigned. ₹10 commission logged.');
+        }
+
+        function switchTab(tabName) {
+            let items = document.querySelectorAll('.nav-item');
+            items.forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
         }
     </script>
 </body>
