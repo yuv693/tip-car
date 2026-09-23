@@ -21,7 +21,7 @@
                 <span class="text-2xl">🚗</span>
                 <div>
                     <h1 class="font-bold base text-teal-400">TIP CAR</h1>
-                    <p class="text-[10px] text-slate-300">आओ कार बुक क्रिया (In-App Live Sync)</p>
+                    <p class="text-[10px] text-slate-300">आओ कार बुक क्रिया (User First)</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
@@ -30,7 +30,7 @@
             </div>
         </header>
 
-        <!-- LOGIN / REGISTRATION SCREEN (Persistent via LocalStorage) -->
+        <!-- LOGIN / REGISTRATION SCREEN -->
         <div id="authScreen" class="absolute inset-0 bg-slate-950 z-50 p-6 flex flex-col justify-center space-y-4 hidden">
             <div class="text-center space-y-1">
                 <h2 class="text-xl font-bold text-teal-400">Welcome to Tip Car</h2>
@@ -54,7 +54,7 @@
         <!-- MAIN APP CONTENT -->
         <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
 
-            <!-- PART 1: USER SIDE VIEW -->
+            <!-- PART 1: USER SIDE VIEW (Default Always) -->
             <div id="userSideView" class="flex flex-col space-y-4">
                 
                 <!-- Welcome Bonus Banner -->
@@ -101,12 +101,12 @@
                 <div class="bg-gradient-to-r from-amber-950/40 to-slate-900 border border-amber-500/40 p-3.5 rounded-2xl flex justify-between items-center shadow-md">
                     <div>
                         <div class="text-xs font-bold text-amber-400">💡 Jugad Plan (Smart Savings Magic)</div>
-                        <div class="text-[10px] text-slate-300">Bus + Carpool combo: Ahmedabad to Mumbai at lowest cost & high safety</div>
+                        <div class="text-[10px] text-slate-300">Bus + Carpool combo: Ahmedabad to Mumbai at lowest cost</div>
                     </div>
                     <button onclick="applyJugadPlan()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg">Apply</button>
                 </div>
 
-                <!-- Available Rides (Lowest Price Sorted & Driver Details) -->
+                <!-- Available Rides -->
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Available Carpool Rides (Lowest First)</h3>
                     
@@ -126,7 +126,6 @@
                         </div>
                         <div class="pt-2 border-t border-slate-900 flex justify-between items-center text-[10px] text-slate-400">
                             <span>⭐ 4.8 Rating • Time: 5:30 PM</span>
-                            <!-- In-App Direct Booking Button -->
                             <button onclick="bookInApp('Vikram Singh', '₹360')" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs">Book In-App Now</button>
                         </div>
                     </div>
@@ -146,7 +145,7 @@
 
             </div>
 
-            <!-- PART 2: DRIVER SIDE VIEW -->
+            <!-- PART 2: DRIVER SIDE VIEW (Hidden by Default) -->
             <div id="driverSideView" class="hidden flex-col space-y-4">
                 
                 <!-- In-App Live Bookings Dashboard for Driver -->
@@ -224,6 +223,12 @@
         let isDriverMode = false;
 
         window.onload = function() {
+            // Force strict User mode default view on fresh open
+            isDriverMode = false;
+            document.getElementById('userSideView').classList.remove('hidden');
+            document.getElementById('driverSideView').classList.add('hidden');
+            document.getElementById('modeToggleBtn').innerText = "Driver Mode";
+
             const savedName = localStorage.getItem('tip_car_name');
             if (!savedName) {
                 document.getElementById('authScreen').classList.remove('hidden');
@@ -231,7 +236,6 @@
                 document.getElementById('profileNameDisplay').innerText = savedName;
             }
             try { initMap(); } catch(e) {}
-            loadDriverBookings();
         };
 
         function toggleAppMode() {
@@ -282,11 +286,10 @@
             alert("💡 Jugad Plan Applied: Ahmedabad board + Mumbai drop combined! Cost saved 40%.");
         }
 
-        // In-App Booking Logic (No WhatsApp needed, saves directly in LocalStorage for Driver)
         function bookInApp(driverName, price) {
             const userName = localStorage.getItem('tip_car_name') || "Guest User";
             const userPhone = localStorage.getItem('tip_car_phone') || "9876543210";
-            const luggage = document.getElementById('luggageDesc5') || document.getElementById('luggageDesc').value || "None";
+            const luggage = document.getElementById('luggageDesc').value || "None";
             const destination = document.getElementById('toLocation').value || "Ahmedabad to Mumbai";
 
             const newBooking = {
@@ -304,7 +307,7 @@
             bookings.push(newBooking);
             localStorage.setItem('tip_car_bookings', JSON.stringify(bookings));
 
-            alert(`✅ Booking Successful! Your booking has been sent directly to Driver (${driverName}) via In-App network.`);
+            alert(`✅ Booking Successful! Your booking has been sent directly to Driver (${driverName}).`);
         }
 
         function loadDriverBookings() {
@@ -320,7 +323,7 @@
             }
 
             let html = '';
-            bookings.forEach((b, index) => {
+            bookings.forEach((b) => {
                 html += `
                     <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl space-y-1">
                         <div class="flex justify-between font-bold text-teal-300">
@@ -331,7 +334,7 @@
                         <div class="text-[10px] text-slate-400">Luggage: ${b.luggage} | Time: ${b.time}</div>
                         <div class="pt-1 flex space-x-2">
                             <button onclick="acceptBooking(${b.id})" class="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded font-bold">Accept Ride</button>
-                            <button onclick="callUser('${b.phone}')" class="bg-slate-800 text-teal-300 text-[10px] px-2 py-1 rounded border border-slate-700">Call User</button>
+                            <button onclick='callUser("${b.phone}")' class="bg-slate-800 text-teal-300 text-[10px] px-2 py-1 rounded border border-slate-700">Call User</button>
                         </div>
                     </div>
                 `;
@@ -340,7 +343,7 @@
         }
 
         function acceptBooking(id) {
-            alert(`Ride accepted successfully! Passenger notified via In-App sync.`);
+            alert(`Ride accepted successfully!`);
         }
 
         function callUser(phone) {
