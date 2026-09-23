@@ -6,7 +6,7 @@
     <title>Tip Car - आओ कार बुक क्रिया</title>
     <!-- Tailwind CSS for modern UI -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Maps JavaScript SDK (Apni API key yahan dalein) -->
+    <!-- Google Maps JavaScript SDK -->
     <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places" async defer></script>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -14,43 +14,42 @@
     <style>
         .brand-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
         .accent-teal { color: #2dd4bf; }
-        .bg-teal-custom { background-color: #2dd4bf; }
     </style>
 </head>
 <body class="bg-slate-950 text-white font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Top Header -->
+    <!-- Top Header with Branding -->
     <header class="brand-gradient border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center shadow-lg">
         <div class="flex items-center space-x-2">
             <span class="text-2xl">🚗</span>
             <div>
-                <h1 class="font-bold text-lg text-teal-400">Tip Car</h1>
-                <p class="text-xs text-slate-300">आओ कार बुक क्रिया</p>
+                <h1 class="font-bold text-lg text-teal-400">TIP CAR</h1>
+                <p class="text-xs text-slate-300">आओ कार बुक क्रिया (Voice-First)</p>
             </div>
         </div>
         <div class="flex items-center space-x-3">
             <button onclick="toggleMode()" id="modeToggleBtn" class="bg-slate-800 border border-teal-500 text-teal-300 text-xs px-3 py-1.5 rounded-full font-medium">Driver Mode</button>
-            <span id="userNameDisplay" class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-slate-200">Malek</span>
+            <span id="userNameDisplay" class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-slate-200">Rahul</span>
         </div>
     </header>
 
     <!-- Main Container -->
     <main class="flex-1 max-w-md w-full mx-auto p-4 flex flex-col space-y-4 pb-20">
 
-        <!-- USER VIEW SECTION -->
+        <!-- USER VIEW SECTION (Part 1) -->
         <div id="userView" class="flex flex-col space-y-4">
             
             <!-- Welcome Bonus Banner -->
             <div class="bg-emerald-950/60 border border-emerald-500/50 p-3 rounded-xl flex justify-between items-center shadow-md">
                 <div class="flex items-center space-x-2">
                     <span class="text-xl">🎉</span>
-                    <span class="text-xs text-emerald-200 font-medium">₹50 Welcome Bonus Credited</span>
+                    <span class="text-xs text-emerald-200 font-medium">₹50 First-Time Online Bonus Credited</span>
                 </div>
                 <button onclick="triggerSOS()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg font-bold animate-pulse">🚨 SOS</button>
             </div>
 
             <!-- Live Google Map Box -->
-            <div class="relative w-full h-52 rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-900">
+            <div class="relative w-full h-48 rounded-2xl overflow-hidden border border-slate-800 shadow-inner bg-slate-900">
                 <div id="map" class="w-full h-full"></div>
                 <div class="absolute bottom-2 left-2 bg-slate-900/90 px-2.5 py-1 rounded text-[10px] text-teal-300 border border-slate-700">Porbandar GPS Active</div>
             </div>
@@ -58,48 +57,39 @@
             <!-- Booking Search Box -->
             <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
                 <div>
-                    <label class="text-xs text-slate-400 block mb-1">📍 From Location</label>
+                    <label class="text-xs text-slate-400 block mb-1">📍 From (Pick-up): Current Location / वर्तमान स्थान</label>
                     <input type="text" id="fromLoc" value="Porbandar, Gujarat" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-teal-400 outline-none">
                 </div>
                 <div>
-                    <label class="text-xs text-slate-400 block mb-1">🎙️ Destination (Voice / Text)</label>
+                    <label class="text-xs text-slate-400 block mb-1">🎙️ To (Destination): जहाँ जाना है / Where to go</label>
                     <div class="flex space-x-2">
                         <input type="text" id="toLoc" placeholder="e.g. Ahmedabad, Rajkot..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white focus:border-teal-400 outline-none">
                         <button onclick="startVoiceSearch()" class="bg-teal-500/20 border border-teal-500 text-teal-300 px-3 rounded-xl text-lg">🎙️</button>
                     </div>
                 </div>
-                <button onclick="searchRides()" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold py-3 rounded-xl shadow-lg hover:opacity-95 transition">Search Rides (Lowest Price First)</button>
-            </div>
-
-            <!-- Jugad Plan Banner -->
-            <div class="bg-slate-900/80 border border-teal-500/30 p-3 rounded-xl flex items-start space-x-3">
-                <span class="text-xl">💡</span>
-                <div class="text-xs">
-                    <strong class="text-teal-300 block mb-0.5">Tip Car Jugad Plan Active</strong>
-                    <span class="text-slate-400">Long routes par state-border connection cars ke zariye lowest cost mein safar karein.</span>
-                </div>
+                <button onclick="searchRides()" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold py-3 rounded-xl shadow-lg hover:opacity-95 transition">Search Rides / सवारी खोजें</button>
             </div>
 
             <!-- Available Rides List -->
             <div class="space-y-3">
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Available Rides</h3>
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Available Carpool Rides / उपलब्ध कारपूल सवारियां</h3>
                 <div id="ridesList" class="space-y-2">
                     <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex justify-between items-center">
                         <div>
-                            <div class="text-sm font-bold text-white">Porbandar ➔ Ahmedabad</div>
-                            <div class="text-[11px] text-slate-400">🕒 07:30 AM • 3 Seats • Maruti Ertiga ⭐4.9</div>
-                            <div class="text-[10px] text-teal-400 mt-0.5">(Driver) Dadhichi</div>
+                            <div class="text-sm font-bold text-white">Vikram Singh</div>
+                            <div class="text-[11px] text-slate-400">Car: Maruti Swift Dzire • 2 seats left</div>
+                            <div class="text-[10px] text-teal-400 mt-0.5">⭐ 4.8 Rating</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-sm font-bold text-teal-300">₹1,290</div>
-                            <button onclick="bookRide('Porbandar to Ahmedabad', '₹1,290')" class="mt-1 bg-teal-500 text-slate-950 text-xs font-bold px-3 py-1 rounded-lg">Book</button>
+                            <div class="text-sm font-bold text-teal-300">₹360 / seat</div>
+                            <button onclick="bookRide('Porbandar to Rajkot', '₹360')" class="mt-1 bg-teal-500 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg">Book</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- DRIVER VIEW SECTION (Hidden by Default) -->
+        <!-- DRIVER VIEW SECTION (Part 2 - Hidden by Default) -->
         <div id="driverView" class="hidden flex-col space-y-4">
             <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
                 <div class="flex items-center space-x-2">
@@ -120,39 +110,29 @@
                 </div>
                 <p class="text-[10px] text-slate-400 text-right">350 / 1000 rides completed</p>
             </div>
-
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2 shadow-lg">
-                <h3 class="font-bold text-xs text-slate-300">📢 Google Ads Campaign Manager</h3>
-                <button onclick="boostAds()" class="w-full bg-slate-800 border border-teal-500 text-teal-300 font-bold py-2 rounded-xl text-xs">Boost Car via Google Ads</button>
-            </div>
         </div>
 
     </main>
 
     <!-- Bottom Navigation Bar -->
     <nav class="brand-gradient border-t border-slate-800 fixed bottom-0 left-0 right-0 max-w-md mx-auto p-3 flex justify-around items-center text-xs text-slate-400 z-50">
-        <button onclick="switchTab('search')" class="text-teal-400 font-medium flex flex-col items-center"><span>🔍</span><span>Search</span></button>
-        <button onclick="switchTab('rides')" class="flex flex-col items-center hover:text-white"><span>🚗</span><span>My Rides</span></button>
-        <button onclick="switchTab('inbox')" class="flex flex-col items-center hover:text-white"><span>💬</span><span>Inbox</span></button>
-        <button onclick="switchTab('profile')" class="flex flex-col items-center hover:text-white"><span>👤</span><span>Profile</span></button>
+        <button onclick="switchTab('home')" class="text-teal-400 font-medium flex flex-col items-center"><span>🏠</span><span>Home</span></button>
+        <button onclick="switchTab('bookings')" class="flex flex-col items-center hover:text-white"><span>🕒</span><span>Bookings</span></button>
+        <button onclick="switchTab('chat')" class="flex flex-col items-center hover:text-white"><span>💬</span><span>Chat</span></button>
+        <button onclick="switchTab('account')" class="flex flex-col items-center hover:text-white"><span>👤</span><span>Account</span></button>
     </nav>
 
     <!-- Script Logic -->
     <script>
-        // Firebase Configuration Placeholder (Apna config yahan dalein)
         const firebaseConfig = {
             apiKey: "YOUR_FIREBASE_API_KEY",
             authDomain: "tip-car-app.firebaseapp.com",
             databaseURL: "https://tip-car-app-default-rtdb.firebaseio.com",
             projectId: "tip-car-app",
-            storageBucket: "tip-car-app.appspot.com",
-            messagingSenderId: "SENDER_ID",
-            appId: "APP_ID"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Google Map Initialization
         function initMap() {
             const porbandar = { lat: 21.6417, lng: 69.6293 };
             const map = new google.maps.Map(document.getElementById("map"), {
@@ -160,66 +140,38 @@
                 center: porbandar,
                 styles: [{ elementType: "geometry", stylers: [{ color: "#1e293b" }] }, { elementType: "labels.text.fill", stylers: [{ color: "#94a3b8" }] }]
             });
-            new google.maps.Marker({ position: porbandar, map: map, title: "Porbandar Location" });
+            new google.maps.Marker({ position: porbandar, map: map, title: "Porbandar" });
         }
         window.onload = initMap;
 
-        // Mode Switcher (User / Driver)
         let isDriver = false;
         function toggleMode() {
             isDriver = !isDriver;
-            const userView = document.getElementById('userView');
-            const driverView = document.getElementById('driverView');
-            const btn = document.getElementById('modeToggleBtn');
-            const nameDisplay = document.getElementById('userNameDisplay');
-
-            if (isDriver) {
-                userView.classList.add('hidden');
-                driverView.classList.remove('hidden');
-                driverView.classList.add('flex');
-                btn.innerText = "User Mode";
-                nameDisplay.innerText = "Malik (Driver)";
-            } else {
-                driverView.classList.add('hidden');
-                userView.classList.remove('hidden');
-                userView.classList.add('flex');
-                btn.innerText = "Driver Mode";
-                nameDisplay.innerText = "Malek";
-            }
+            document.getElementById('userView').classList.toggle('hidden', isDriver);
+            document.getElementById('driverView').classList.toggle('hidden', !isDriver);
+            document.getElementById('modeToggleBtn').innerText = isDriver ? "User Mode" : "Driver Mode";
+            document.getElementById('userNameDisplay').innerText = isDriver ? "Rahul (Driver)" : "Rahul";
         }
 
-        // Voice Search Simulation
         function startVoiceSearch() {
-            const destInput = document.getElementById('toLoc');
-            destInput.value = "Listening...";
-            setTimeout(() => {
-                destInput.value = "Rajkot, Gujarat";
-                alert("Voice detected: Rajkot! Lowest price rides filtered.");
-            }, 1500);
+            document.getElementById('toLoc').value = "Listening... Rajkot";
+            setTimeout(() => { alert("Voice Book: Rajkot selected successfully!"); }, 1000);
         }
 
-        // Search Rides Action
         function searchRides() {
-            alert("Fetching lowest price verified rides from Firebase database...");
+            alert("Searching lowest price verified rides...");
         }
 
-        // Book Ride Action (WhatsApp / Firebase Sync)
         function bookRide(route, price) {
-            db.ref('bookings/').push({ route: route, price: price, time: new Date().toISOString() });
-            window.open(`https://wa.me/?text=Hello%20Tip%20Car,%20I%20want%20to%20book%20ride:%20${route}%20for%20${price}`, '_blank');
+            window.open(`https://wa.me/?text=Hello%20Tip%20Car,%20I%20want%20to%20book%20${route}%20for%20${price}`, '_blank');
         }
 
-        // SOS Safety Alert
         function triggerSOS() {
-            alert("🚨 SOS Alert Triggered! Emergency contacts and live location sent successfully.");
+            alert("🚨 SOS Alert Sent! Emergency contacts notified.");
         }
 
         function acceptBatch() {
-            alert("Passenger batch accepted! ₹10 AI commission added to wallet.");
-        }
-
-        function boostAds() {
-            alert("Google Ads Campaign manager opened for boosting car visibility.");
+            alert("Passenger batch accepted! ₹10 commission added.");
         }
 
         function switchTab(tab) {
