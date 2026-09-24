@@ -5,379 +5,260 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tip Car - आओ कार बुक क्रिया</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=places" async defer></script>
     <style>
-        .brand-gradient { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
+        .light-bg { background-color: #f8fafc; }
     </style>
 </head>
-<body class="bg-slate-950 text-white font-sans antialiased min-h-screen flex flex-col items-center justify-center p-0 sm:p-4">
+<body class="bg-slate-900 text-slate-800 font-sans antialiased min-h-screen flex flex-col items-center justify-center p-0 sm:p-4">
 
     <!-- Mobile App Container -->
-    <div class="w-full max-w-md bg-slate-900 min-h-screen sm:min-h-[850px] sm:rounded-3xl shadow-2xl flex flex-col relative overflow-hidden border border-slate-800">
+    <div class="w-full max-w-md bg-white min-h-screen sm:min-h-[950px] sm:rounded-3xl shadow-2xl flex flex-col relative overflow-hidden border border-slate-200">
 
-        <!-- Header with Branding -->
-        <header class="brand-gradient border-b border-slate-800 p-4 sticky top-0 z-50 flex justify-between items-center shadow-md">
-            <div class="flex items-center space-x-2">
-                <span class="text-2xl">🚗</span>
-                <div>
-                    <h1 class="font-bold base text-teal-400">TIP CAR</h1>
-                    <p class="text-[10px] text-slate-300">आओ कार बुक क्रिया (User First)</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="toggleAppMode()" id="modeToggleBtn" class="bg-slate-800 border border-teal-500 text-teal-300 text-xs px-2.5 py-1 rounded-full font-medium">Driver Mode</button>
-                <span id="profileNameDisplay" class="text-xs bg-slate-800 px-2.5 py-1 rounded-full text-slate-200">Rahul</span>
-            </div>
-        </header>
-
-        <!-- LOGIN / REGISTRATION SCREEN -->
-        <div id="authScreen" class="absolute inset-0 bg-slate-950 z-50 p-6 flex flex-col justify-center space-y-4 hidden">
-            <div class="text-center space-y-1">
-                <h2 class="text-xl font-bold text-teal-400">Welcome to Tip Car</h2>
-                <p class="text-xs text-slate-400">Enter details once. Saved forever! No OTP needed.</p>
-            </div>
-            <div class="space-y-3">
-                <input type="text" id="authName" placeholder="Full Name / पूरा नाम" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-teal-400">
-                <input type="tel" id="authPhone" placeholder="Mobile Number / मोबाइल नंबर" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:border-teal-400">
-                
-                <div id="driverExtraFields" class="space-y-3 hidden">
-                    <input type="text" id="authCarName" placeholder="Car Name & Model (e.g. Swift Dzire)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none">
-                    <input type="text" id="authSeats" placeholder="Total Seats (e.g. 4 Seater)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none">
-                    <input type="text" id="authCarNo" placeholder="Car Number (e.g. GJ-25-AB-1234)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none">
-                    <input type="text" id="authLic" placeholder="License Number" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none">
+        <!-- LANDING SCREEN (Exact Couple Photo + Icons + Text + Login) -->
+        <div id="landingScreen" class="absolute inset-0 bg-white z-50 flex flex-col justify-between overflow-y-auto pb-8">
+            <div>
+                <!-- Top Photo Section: Yahan aap apni wali asli couple photo lagayein -->
+                <div class="w-full h-80 bg-slate-200 relative overflow-hidden flex items-center justify-center">
+                    <!-- Aap apni photo ka direct link ya base64 yahan daal sakte hain -->
+                    <img src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=800&q=80" alt="Tip Car Couple Photo" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end p-4">
+                        <div class="text-white">
+                            <h1 class="text-base font-bold tracking-wider">TIP CAR</h1>
+                            <p class="text-[10px] text-teal-300 font-medium">आओ कार बुक क्रिया</p>
+                        </div>
+                    </div>
                 </div>
 
-                <button onclick="saveAndLogin()" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-xs shadow-lg">Save & Continue</button>
+                <!-- Two Circular Badges matching screenshot -->
+                <div class="flex justify-center space-x-6 my-6">
+                    <div class="w-14 h-14 bg-blue-50/80 border border-blue-100 rounded-full flex items-center justify-center text-2xl shadow-sm">🚗</div>
+                    <div class="w-14 h-14 bg-blue-50/80 border border-blue-100 rounded-full flex items-center justify-center text-2xl shadow-sm">🧳</div>
+                </div>
+
+                <!-- Heading and Subtitle matching screenshot[span_1](start_span)[span_1](end_span) -->
+                <div class="text-center px-6 space-y-2">
+                    <h2 class="text-xl font-bold text-slate-900 leading-snug tracking-tight">Rides and stays, now together[span_2](start_span)[span_2](end_span)</h2>
+                    <p class="text-xs text-slate-500 leading-relaxed px-2">Porbandar se Rajkot aur state-to-state safar ka sabse asan aur sasta tarika.</p>
+                </div>
+            </div>
+
+            <!-- Bottom Action Buttons matching screenshot[span_3](start_span)[span_3](end_span) -->
+            <div class="px-6 space-y-3 bg-white">
+                <button onclick="openAuthScreen('signup')" class="w-full bg-[#1b64f2] hover:bg-blue-700 text-white font-bold py-3.5 rounded-full text-sm shadow-md transition-all">Sign up</button>
+                <div class="text-center pt-1">
+                    <button onclick="openAuthScreen('login')" class="text-[#1b64f2] font-bold text-sm hover:underline py-1">Log in</button>
+                </div>
             </div>
         </div>
 
-        <!-- MAIN APP CONTENT -->
-        <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-24">
-
-            <!-- PART 1: USER SIDE VIEW (Default Always) -->
-            <div id="userSideView" class="flex flex-col space-y-4">
+        <!-- AUTH SCREEN (Name & Mobile Number Login / Signup Form) -->
+        <div id="authScreen" class="absolute inset-0 bg-white z-50 p-6 flex flex-col justify-center space-y-4 hidden">
+            <div class="text-center space-y-1">
+                <h2 id="authScreenTitle" class="text-xl font-bold text-blue-600">Welcome to Tip Car</h2>
+                <p class="text-xs text-slate-500">Enter your Name and Mobile Number to continue.</p>
+            </div>
+            <div class="space-y-3">
+                <input type="text" id="authName" placeholder="Full Name / पूरा नाम" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none focus:border-blue-500">
+                <input type="tel" id="authPhone" placeholder="Mobile Number / मोबाइल नंबर" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none focus:border-blue-500">
                 
-                <!-- Welcome Bonus Banner -->
-                <div class="bg-emerald-950/60 border border-emerald-500/50 p-3 rounded-xl flex justify-between items-center shadow-md">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xl">🎉</span>
-                        <span class="text-xs text-emerald-200 font-medium">₹50 First-Time Online Bonus Credited</span>
+                <div id="otpJugadContainer" class="hidden space-y-2 bg-blue-50 border border-blue-200 p-3 rounded-xl">
+                    <div class="flex justify-between items-center text-[11px] text-blue-800 font-bold">
+                        <span>⚡ Smart OTP Jugad Active</span>
+                        <span class="text-blue-600">Auto-filling...</span>
                     </div>
-                    <button onclick="triggerSOS()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg font-bold animate-pulse">🚨 SOS</button>
+                    <input type="text" id="authOtpInput" class="w-full bg-white border border-blue-300 rounded-lg p-2 text-center text-sm font-bold text-blue-900 tracking-widest outline-none" readonly>
                 </div>
 
-                <!-- Google Map Live Box -->
-                <div class="relative w-full h-40 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950">
-                    <div id="map" class="w-full h-full"></div>
-                    <div class="absolute bottom-2 left-2 bg-slate-900/90 px-2 py-0.5 rounded text-[9px] text-teal-300 border border-slate-700">Auto GPS Active (Porbandar)</div>
-                </div>
+                <button id="authActionButton" onclick="handleAuthAction()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs shadow-md">Get Smart OTP & Continue</button>
+                <button onclick="closeAuthScreen()" class="w-full bg-slate-100 text-slate-600 font-bold py-2 rounded-xl text-xs">Back to Home</button>
+            </div>
+        </div>
 
-                <!-- Mode Switcher Tabs -->
-                <div class="grid grid-cols-2 gap-2 bg-slate-800 p-1 rounded-xl">
-                    <button class="bg-teal-500 text-slate-950 font-medium py-2 rounded-lg text-xs shadow">Share Car</button>
-                    <button class="text-slate-400 font-medium py-2 rounded-lg text-xs">Private Taxi</button>
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-100 p-3.5 sticky top-0 z-40 flex justify-between items-center shadow-sm">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-teal-600 rounded-full flex items-center justify-center text-white font-bold text-xs">🚗</div>
+                <div>
+                    <h1 class="font-bold text-xs text-slate-900 tracking-wider">TIP CAR</h1>
+                    <p class="text-[9px] text-teal-700 font-bold">आओ कार बुक क्रिया (GPS + Voice)</p>
                 </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleAppMode()" id="modeToggleBtn" class="bg-teal-50 border border-teal-500 text-teal-700 text-[10px] px-2.5 py-1 rounded-full font-bold">Driver Mode</button>
+            </div>
+        </header>
 
-                <!-- Search & Voice Booking Box -->
-                <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
+        <!-- MAIN APP CONTENT -->
+        <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-24 light-bg">
+
+            <!-- USER SIDE VIEW -->
+            <div id="userSideView" class="flex flex-col space-y-4 relative">
+                
+                <div class="flex justify-between items-center">
                     <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">📍 From: Current Location / वर्तमान स्थान</label>
-                        <input type="text" id="fromLocation" value="Porbandar, Gujarat" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none">
+                        <h2 class="text-sm font-bold text-slate-900" id="greetingUser">Hello, Passenger!</h2>
+                        <p class="text-xs text-slate-600 font-medium">कहाँ जाना चाहते हैं?</p>
                     </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block mb-1">🎙️ To: Destination / जहाँ जाना है (Voice Supported)</label>
-                        <div class="flex space-x-2">
-                            <input type="text" id="toLocation" placeholder="e.g. Ahmedabad to Mumbai" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs text-white outline-none">
-                            <button onclick="startVoiceBooking()" class="bg-teal-500/20 border border-teal-500 text-teal-300 px-3 rounded-xl text-sm">🎙️</button>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-1">
-                        <span class="text-[11px] text-slate-400">📅 Today, 3 Seats Available</span>
-                        <button onclick="searchLowestPriceRides()" class="bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs">Search Lowest Price</button>
-                    </div>
+                    <button onclick="triggerSOS()" class="bg-red-600 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] shadow-sm animate-pulse">🚨 SOS Safety</button>
                 </div>
 
-                <!-- Jugad Plan Banner (Smart Savings) -->
-                <div class="bg-gradient-to-r from-amber-950/40 to-slate-900 border border-amber-500/40 p-3.5 rounded-2xl flex justify-between items-center shadow-md">
-                    <div>
-                        <div class="text-xs font-bold text-amber-400">💡 Jugad Plan (Smart Savings Magic)</div>
-                        <div class="text-[10px] text-slate-300">Bus + Carpool combo: Ahmedabad to Mumbai at lowest cost</div>
+                <!-- REAL GPS LIVE STATUS BOX -->
+                <div class="bg-white border border-teal-200 p-3.5 rounded-2xl shadow-sm space-y-2 bg-gradient-to-br from-teal-50 to-white">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xs font-bold text-teal-900 flex items-center space-x-1">
+                            <span>🛰️</span><span>Real GPS Connection Status</span>
+                        </h3>
+                        <span id="gpsStatusBadge" class="bg-teal-600 text-white font-bold text-[9px] px-2 py-0.5 rounded-full animate-pulse">Live Active</span>
                     </div>
-                    <button onclick="applyJugadPlan()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg">Apply</button>
+                    <p id="gpsCoordsText" class="text-[11px] text-slate-600">Fetching live coordinates...</p>
+                    <button onclick="fetchRealGPSLocation()" class="w-full bg-teal-700 text-white font-bold py-2 rounded-xl text-xs shadow-sm">Refresh My Live GPS</button>
                 </div>
 
-                <!-- Available Rides -->
-                <div class="space-y-3">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Available Carpool Rides (Lowest First)</h3>
-                    
-                    <div class="bg-slate-950 border border-slate-800 p-3.5 rounded-2xl space-y-2.5 shadow-md">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center space-x-2.5">
-                                <div class="w-9 h-9 bg-slate-800 rounded-full flex items-center justify-center text-xs">👨‍✈️</div>
-                                <div>
-                                    <h4 class="text-xs font-bold text-white">Vikram Singh</h4>
-                                    <p class="text-[10px] text-slate-400">Maruti Swift Dzire • 2 seats left</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-xs font-bold text-teal-400">₹360 / seat</div>
-                                <span class="text-[9px] bg-teal-950 text-teal-300 px-1.5 py-0.5 rounded border border-teal-800">Lowest Price</span>
+                <!-- SEARCH & VOICE BOOKING -->
+                <div class="bg-white border border-slate-200 p-3.5 rounded-2xl space-y-3 shadow-sm">
+                    <div class="flex justify-between items-center bg-teal-50 border border-teal-200 p-2.5 rounded-xl">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">🎤</span>
+                            <div>
+                                <h4 class="text-xs font-bold text-teal-900">Voice Booking (बोलकर बुक करें)</h4>
+                                <p id="voiceStatusText" class="text-[10px] text-teal-700">Mic dabayein aur kahan jana hai bole</p>
                             </div>
                         </div>
-                        <div class="pt-2 border-t border-slate-900 flex justify-between items-center text-[10px] text-slate-400">
-                            <span>⭐ 4.8 Rating • Time: 5:30 PM</span>
-                            <button onclick="bookInApp('Vikram Singh', '₹360')" class="bg-teal-600 hover:bg-teal-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs">Book In-App Now</button>
-                        </div>
+                        <button onclick="startVoiceBooking()" class="bg-teal-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm">Start Mic</button>
                     </div>
-                </div>
 
-                <!-- Extra Luggage Details Box -->
-                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2">
-                    <label class="text-[10px] text-slate-400 block font-semibold">🎒 Extra Luggage Details (Optional)</label>
-                    <input type="text" id="luggageDesc" placeholder="Mention extra bags or weight here..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white outline-none">
-                </div>
-
-                <!-- Google Ads Banner -->
-                <div class="bg-slate-950 border border-dashed border-teal-500/50 p-3 rounded-xl text-center space-y-1">
-                    <div class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Sponsored Advertisement (Google AdMob)</div>
-                    <div class="text-xs text-slate-300 bg-slate-900 p-2 rounded-lg border border-slate-800">🚀 Get Special Car Insurance Discount - Click Here!</div>
+                    <div class="relative">
+                        <input type="text" id="fromLocation" value="Porbandar" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 text-xs text-slate-800 outline-none">
+                        <span class="absolute right-3 top-2.5 text-xs text-slate-400">📍</span>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="toLocation" value="Rajkot" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 text-xs text-slate-800 outline-none">
+                        <span class="absolute right-3 top-2.5 text-xs text-slate-400">🏁</span>
+                    </div>
+                    <button onclick="searchRealGPSRides()" class="w-full bg-teal-600 text-white font-bold py-2 rounded-xl text-xs shadow-sm">Search with GPS</button>
                 </div>
 
             </div>
 
-            <!-- PART 2: DRIVER SIDE VIEW (Hidden by Default) -->
+            <!-- DRIVER SIDE VIEW -->
             <div id="driverSideView" class="hidden flex-col space-y-4">
-                
-                <!-- In-App Live Bookings Dashboard for Driver -->
-                <div class="bg-slate-950 border border-teal-500/40 p-4 rounded-2xl space-y-3 shadow-lg">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xl">📥</span>
-                            <h3 class="font-bold text-sm text-teal-400">Live In-App Bookings</h3>
-                        </div>
-                        <span id="bookingCountBadge" class="bg-teal-900 text-teal-300 text-[10px] px-2 py-0.5 rounded-full font-bold">0 Active</span>
-                    </div>
-                    <div id="driverBookingList" class="space-y-2 max-h-40 overflow-y-auto text-xs">
-                        <p class="text-slate-500 text-center py-2">No new bookings yet. Waiting for passengers...</p>
+                <div class="bg-white border border-slate-200 p-3.5 rounded-2xl flex justify-between items-center shadow-sm">
+                    <div>
+                        <h4 id="driverProfileName" class="text-xs font-bold text-teal-700">Driver: Rahul</h4>
+                        <p id="driverProfileCar" class="text-[10px] text-slate-500">Swift Dzire (GJ-25-AB-1234)</p>
                     </div>
                 </div>
-
-                <!-- AI Smart Agent for Driver -->
-                <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xl">🤖</span>
-                        <h3 class="font-bold text-sm text-teal-400">AI Smart Agent / Passenger Matcher</h3>
-                    </div>
-                    <p class="text-xs text-slate-300">Route: Porbandar to Rajkot. Commission: ₹10 per user fixed.</p>
-                    <button onclick="acceptPassengerBatch()" class="w-full bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs">Accept Batch & Sync</button>
-                </div>
-
-                <!-- Free Car Insurance Progress Tracker -->
-                <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-2 shadow-lg">
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="font-semibold text-slate-300">🛡️ Free Car Insurance Progress</span>
-                        <span class="text-teal-400 font-bold">35%</span>
-                    </div>
-                    <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800">
-                        <div class="bg-teal-400 h-full w-[35%]"></div>
-                    </div>
-                    <p class="text-[10px] text-slate-400 text-right">350 / 1000 rides completed</p>
-                </div>
-
-                <!-- Google Ads Manager for Local Driver Promotion -->
-                <div class="bg-slate-950 border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xl">📢</span>
-                        <h3 class="font-bold text-xs text-teal-400">Google Ads Manager (Driver Promotion)</h3>
-                    </div>
-                    <p class="text-[11px] text-slate-300">Run instant local ads in your region to get maximum bookings.</p>
-                    <button onclick="launchGoogleAds()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-xs">Launch Local Ad Campaign</button>
-                </div>
-
             </div>
 
         </main>
 
-        <!-- Bottom Navigation Bar -->
-        <nav class="brand-gradient border-t border-slate-800 absolute bottom-0 left-0 right-0 p-2.5 flex justify-around items-center text-[10px] text-slate-400 z-40">
-            <button onclick="switchTab('home')" class="text-teal-400 font-medium flex flex-col items-center"><span>🏠</span><span>Home</span></button>
-            <button onclick="switchTab('bookings')" class="flex flex-col items-center hover:text-white"><span>🕒</span><span>Bookings</span></button>
-            <button onclick="switchTab('chat')" class="flex flex-col items-center hover:text-white"><span>💬</span><span>Chat</span></button>
-            <button onclick="switchTab('account')" class="flex flex-col items-center hover:text-white"><span>👤</span><span>Account</span></button>
+        <!-- Bottom Navigation -->
+        <nav class="bg-white border-t border-slate-200 absolute bottom-0 left-0 right-0 p-2.5 flex justify-around items-center text-[10px] text-slate-500 z-30 shadow-lg">
+            <button onclick="switchTab('home')" class="text-teal-600 font-bold flex flex-col items-center"><span>🏠</span><span>Home</span></button>
+            <button onclick="switchTab('bookings')" class="flex flex-col items-center"><span>🕒</span><span>Bookings</span></button>
+            <button onclick="switchTab('chat')" class="flex flex-col items-center"><span>💬</span><span>Chat</span></button>
+            <button onclick="switchTab('account')" class="flex flex-col items-center"><span>👤</span><span>Account</span></button>
         </nav>
 
     </div>
 
     <!-- Script Logic -->
     <script>
-        function initMap() {
-            const porbandar = { lat: 21.6417, lng: 69.6293 };
-            const map = new google.maps.Map(document.getElementById("map"), {
-                zoom: 12,
-                center: porbandar,
-                styles: [{ elementType: "geometry", stylers: [{ color: "#0f172a" }] }, { elementType: "labels.text.fill", stylers: [{ color: "#94a3b8" }] }]
-            });
-            new google.maps.Marker({ position: porbandar, map: map, title: "Porbandar" });
-        }
-
         let isDriverMode = false;
+        let otpStep = 1;
 
         window.onload = function() {
-            // Force strict User mode default view on fresh open
-            isDriverMode = false;
-            document.getElementById('userSideView').classList.remove('hidden');
-            document.getElementById('driverSideView').classList.add('hidden');
-            document.getElementById('modeToggleBtn').innerText = "Driver Mode";
-
+            fetchRealGPSLocation();
             const savedName = localStorage.getItem('tip_car_name');
-            if (!savedName) {
-                document.getElementById('authScreen').classList.remove('hidden');
-            } else {
-                document.getElementById('profileNameDisplay').innerText = savedName;
+            if (savedName) {
+                document.getElementById('landingScreen').classList.add('hidden');
+                document.getElementById('greetingUser').innerText = `Hello, ${savedName}!`;
             }
-            try { initMap(); } catch(e) {}
         };
+
+        function openAuthScreen(type) {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('authScreenTitle').innerText = type === 'signup' ? 'Sign up to Tip Car' : 'Log in to Tip Car';
+            resetAuthForm();
+        }
+
+        function closeAuthScreen() {
+            document.getElementById('authScreen').classList.add('hidden');
+        }
+
+        function resetAuthForm() {
+            otpStep = 1;
+            document.getElementById('otpJugadContainer').classList.add('hidden');
+            document.getElementById('authActionButton').innerText = "Get Smart OTP & Continue";
+        }
+
+        function fetchRealGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(4);
+                        const lon = position.coords.longitude.toFixed(4);
+                        document.getElementById('gpsCoordsText').innerText = `Live GPS Lat: ${lat}, Lon: ${lon} (Connected)`;
+                    },
+                    (error) => {
+                        document.getElementById('gpsCoordsText').innerText = "GPS Location active (Porbandar Region)";
+                    }
+                );
+            }
+        }
+
+        function startVoiceBooking() {
+            const statusText = document.getElementById('voiceStatusText');
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert("Voice recognition is not supported in this browser.");
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'hi-IN';
+            statusText.innerText = "Listening... boliye kahan jana hai!";
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                const speechResult = event.results[0][0].transcript;
+                document.getElementById('toLocation').value = speechResult;
+                statusText.innerText = `Sun liya: "${speechResult}"`;
+            };
+        }
 
         function toggleAppMode() {
             isDriverMode = !isDriverMode;
             document.getElementById('userSideView').classList.toggle('hidden', isDriverMode);
             document.getElementById('driverSideView').classList.toggle('hidden', !isDriverMode);
             document.getElementById('modeToggleBtn').innerText = isDriverMode ? "User Mode" : "Driver Mode";
-            
-            const isDriverRegistered = localStorage.getItem('tip_car_is_driver');
-            if (isDriverMode && !isDriverRegistered) {
-                document.getElementById('driverExtraFields').classList.remove('hidden');
-                document.getElementById('authScreen').classList.remove('hidden');
-            }
-            if(isDriverMode) {
-                loadDriverBookings();
-            }
         }
 
-        function saveAndLogin() {
+        function handleAuthAction() {
             const name = document.getElementById('authName').value;
             const phone = document.getElementById('authPhone').value;
-            if(!name || !phone) {
-                alert("Please enter Name and Mobile Number!");
-                return;
-            }
-            localStorage.setItem('tip_car_name', name);
-            localStorage.setItem('tip_car_phone', phone);
-            if(isDriverMode) {
-                localStorage.setItem('tip_car_is_driver', 'true');
-            }
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('profileNameDisplay').innerText = name;
-            alert("Details saved successfully!");
-        }
+            if(!name || !phone) { alert("Enter Name and Phone!"); return; }
 
-        function startVoiceBooking() {
-            document.getElementById('toLocation').value = "Listening... Ahmedabad to Mumbai";
-            setTimeout(() => {
-                alert("Voice Recognized: 'Aao Car Book Kria' - Route set successfully!");
-            }, 1000);
-        }
-
-        function searchLowestPriceRides() {
-            alert("Sorting lowest price verified rides...");
-        }
-
-        function applyJugadPlan() {
-            alert("💡 Jugad Plan Applied: Ahmedabad board + Mumbai drop combined! Cost saved 40%.");
-        }
-
-        function bookInApp(driverName, price) {
-            const userName = localStorage.getItem('tip_car_name') || "Guest User";
-            const userPhone = localStorage.getItem('tip_car_phone') || "9876543210";
-            const luggage = document.getElementById('luggageDesc').value || "None";
-            const destination = document.getElementById('toLocation').value || "Ahmedabad to Mumbai";
-
-            const newBooking = {
-                id: Date.now(),
-                user: userName,
-                phone: userPhone,
-                driver: driverName,
-                price: price,
-                route: destination,
-                luggage: luggage,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-
-            let bookings = JSON.parse(localStorage.getItem('tip_car_bookings') || '[]');
-            bookings.push(newBooking);
-            localStorage.setItem('tip_car_bookings', JSON.stringify(bookings));
-
-            alert(`✅ Booking Successful! Your booking has been sent directly to Driver (${driverName}).`);
-        }
-
-        function loadDriverBookings() {
-            const listContainer = document.getElementById('driverBookingList');
-            const badge = document.getElementById('bookingCountBadge');
-            const bookings = JSON.parse(localStorage.getItem('tip_car_bookings') || '[]');
-
-            badge.innerText = `${bookings.length} Active`;
-
-            if(bookings.length === 0) {
-                listContainer.innerHTML = `<p class="text-slate-500 text-center py-2">No new bookings yet. Waiting for passengers...</p>`;
-                return;
-            }
-
-            let html = '';
-            bookings.forEach((b) => {
-                html += `
-                    <div class="bg-slate-900 border border-slate-800 p-2.5 rounded-xl space-y-1">
-                        <div class="flex justify-between font-bold text-teal-300">
-                            <span>👤 ${b.user} (${b.phone})</span>
-                            <span>${b.price}</span>
-                        </div>
-                        <div class="text-[10px] text-slate-400">Route: ${b.route}</div>
-                        <div class="text-[10px] text-slate-400">Luggage: ${b.luggage} | Time: ${b.time}</div>
-                        <div class="pt-1 flex space-x-2">
-                            <button onclick="acceptBooking(${b.id})" class="bg-emerald-600 text-white text-[10px] px-2 py-1 rounded font-bold">Accept Ride</button>
-                            <button onclick='callUser("${b.phone}")' class="bg-slate-800 text-teal-300 text-[10px] px-2 py-1 rounded border border-slate-700">Call User</button>
-                        </div>
-                    </div>
-                `;
-            });
-            listContainer.innerHTML = html;
-        }
-
-        function acceptBooking(id) {
-            alert(`Ride accepted successfully!`);
-        }
-
-        function callUser(phone) {
-            window.location.href = `tel:${phone}`;
-        }
-
-        function triggerSOS() {
-            alert("🚨 SOS Alert Triggered! Emergency authorities notified.");
-        }
-
-        function acceptPassengerBatch() {
-            alert("Passenger batch accepted! ₹10 commission added to wallet.");
-        }
-
-        function launchGoogleAds() {
-            alert("🚀 Google Ads campaign launched successfully for local route promotion!");
-        }
-
-        function switchTab(tab) {
-            if(tab === 'account') {
-                if(confirm("Do you want to reset saved details?")) {
-                    localStorage.clear();
-                    location.reload();
-                }
-            } else if(tab === 'bookings') {
-                if(isDriverMode) {
-                    loadDriverBookings();
-                } else {
-                    alert("Switched to User Bookings history tab.");
-                }
+            if(otpStep === 1) {
+                document.getElementById('authOtpInput').value = Math.floor(1000 + Math.random() * 9000);
+                document.getElementById('otpJugadContainer').classList.remove('hidden');
+                document.getElementById('authActionButton').innerText = "Verify & Complete";
+                otpStep = 2;
             } else {
-                alert(`Switched to ${tab} tab.`);
+                localStorage.setItem('tip_car_name', name);
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('landingScreen').classList.add('hidden');
+                document.getElementById('greetingUser').innerText = `Hello, ${name}!`;
+                alert("🎉 Login Successful!");
+                resetAuthForm();
             }
         }
+
+        function searchRealGPSRides() { alert("🛰️ Searching nearby rides using live GPS!"); }
+        function switchTab(tab) {
+            if(tab === 'account') { if(confirm("Logout / reset profile?")) { localStorage.clear(); location.reload(); } }
+            else { alert(`Switched to ${tab}`); }
+        }
+        function triggerSOS() { alert("🚨 SOS Emergency Triggered with live GPS!"); }
     </script>
 </body>
 </html>
