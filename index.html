@@ -20,7 +20,7 @@
                 <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">🚗</div>
                 <div>
                     <h1 class="font-bold text-xs text-slate-900 tracking-wider">TIP CAR & BUS</h1>
-                    <p class="text-[8px] text-blue-700 font-bold">Pan-India Network</p>
+                    <p class="text-[8px] text-blue-700 font-bold">Pan-India Cloud Network</p>
                 </div>
             </div>
             <div class="flex items-center space-x-1.5">
@@ -44,7 +44,7 @@
                         <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm text-lg">🚌</div>
                     </div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">Travel anywhere together. Spend smarter.</h2>
-                    <p class="text-xs text-slate-500">Pan-India trusted ride-sharing platform.</p>
+                    <p class="text-xs text-slate-500">Cloud-Synced Pan-India Ride Sharing.</p>
                 </div>
             </div>
 
@@ -81,8 +81,8 @@
         <!-- DRIVER REGISTRATION & PUBLISH RIDE MODAL -->
         <div id="driverAuthModal" class="absolute inset-0 bg-white z-50 p-5 flex flex-col justify-center space-y-3 hidden overflow-y-auto">
             <div class="text-center space-y-1">
-                <h2 class="text-lg font-bold text-blue-600">🚗 Driver & Ride Publish</h2>
-                <p class="text-[11px] text-slate-500">Poore India mein kahin ki bhi ride publish karein.</p>
+                <h2 class="text-lg font-bold text-blue-600">🚗 Driver Cloud Publish</h2>
+                <p class="text-[11px] text-slate-500">Poore India mein kahin ki bhi ride publish karein (Firestore).</p>
             </div>
             <div class="space-y-2.5 text-xs">
                 <input type="text" id="driverRegName" placeholder="Driver Full Name (e.g. Ramesh Kumar)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
@@ -90,8 +90,11 @@
                 <input type="text" id="driverRegCarName" placeholder="Car Name & Model (e.g. Innova Crysta)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
                 <input type="text" id="driverRegCarNum" placeholder="Car Number (e.g. DL-01-AB-1234)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
                 <input type="text" id="driverRegLicense" placeholder="Driving License Number" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="text" id="driverRegFrom" placeholder="From City (e.g. Delhi)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="text" id="driverRegTo" placeholder="To City (e.g. Jaipur)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="number" id="driverRegFare" placeholder="Seat Fare in ₹ (e.g. 450)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
                 
-                <button onclick="saveDriverDetailsData()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md">Publish Ride & Enter Driver Mode</button>
+                <button onclick="publishRideToCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md">Publish to Cloud & Enter Driver Mode</button>
             </div>
             <button onclick="closeDriverAuthModal()" class="text-center text-xs text-slate-400 font-medium pt-1">Cancel / Back</button>
         </div>
@@ -163,12 +166,12 @@
                 <div class="bg-white border-2 border-blue-500/30 rounded-3xl p-4 shadow-sm space-y-3">
                     <div class="border-b border-slate-100 pb-2.5">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">From</label>
-                        <input type="text" id="searchFrom" placeholder="City, station, place (e.g. Porbandar, Delhi)" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
+                        <input type="text" id="searchFrom" placeholder="City, station, place (e.g. Delhi)" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
                     </div>
 
                     <div class="border-b border-slate-100 pb-2.5">
                         <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">To</label>
-                        <input type="text" id="searchTo" placeholder="City, station, place (e.g. Rajkot, Mumbai)" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
+                        <input type="text" id="searchTo" placeholder="City, station, place (e.g. Jaipur)" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 border-b border-slate-100 pb-2.5">
@@ -187,35 +190,19 @@
                         <input type="text" id="searchPassengers" value="1 passenger" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
                     </div>
 
-                    <button onclick="executePanIndiaSearch()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md transition">Search</button>
+                    <button onclick="searchCloudRides()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md transition">Search Cloud Rides</button>
                 </div>
 
                 <!-- CARPOOL RIDES SECTION -->
                 <div id="carListSection" class="space-y-3">
                     <div class="flex justify-between items-center">
-                        <h3 id="carSectionTitle" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Rides (Pan-India)</h3>
+                        <h3 id="carSectionTitle" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Cloud Rides</h3>
                         <button onclick="openDriverDetails()" class="text-[10px] text-blue-600 font-bold underline">View Profile</button>
                     </div>
                     
-                    <div class="bg-white border border-slate-200 p-3.5 rounded-2xl space-y-2.5 shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div class="flex items-center space-x-2.5">
-                                <div class="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center text-sm font-bold text-blue-700">PI</div>
-                                <div>
-                                    <h4 id="listDriverName" class="text-xs font-bold text-slate-900">Pan-India Verified Partner</h4>
-                                    <p id="listDriverCarRoute" class="text-[10px] text-slate-500">Intercity Verified Ride</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-[10px] text-slate-400 block">Fare</span>
-                                <div id="displaySeatFare" class="text-xs font-bold text-blue-700">₹450 / seat</div>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2 pt-1">
-                            <button onclick="callActiveDriver()" class="flex-1 bg-blue-50 border border-blue-500 text-blue-700 font-bold py-1.5 rounded-xl text-[11px] flex items-center justify-center space-x-1">
-                                <span>📞</span><span>Direct Call</span>
-                            </button>
-                            <button onclick="bookInApp()" class="flex-1 bg-slate-900 text-white font-bold py-1.5 rounded-xl text-[11px]">Book Seat</button>
+                    <div id="dynamicRidesContainer" class="space-y-3">
+                        <div class="bg-white border border-slate-200 p-4 rounded-2xl text-center text-xs text-slate-500 shadow-sm">
+                            Enter cities above and click <b>Search Cloud Rides</b> to view live pan-India rides from Firestore.
                         </div>
                     </div>
                 </div>
@@ -227,7 +214,7 @@
                 <div class="bg-white border border-slate-200 p-3.5 rounded-2xl flex justify-between items-center shadow-sm">
                     <div>
                         <h4 id="activeDriverBannerName" class="text-xs font-bold text-blue-700">Driver: Pan-India Partner</h4>
-                        <p id="driverBannerRoute" class="text-[10px] text-slate-500">Route: Any City to City</p>
+                        <p id="driverBannerRoute" class="text-[10px] text-slate-500">Route: Cloud Live Active</p>
                     </div>
                     <button onclick="openDriverDetails()" class="bg-blue-50 border border-blue-600 text-blue-700 font-bold text-[10px] px-2.5 py-1.5 rounded-xl shadow-sm">View Profile</button>
                 </div>
@@ -308,9 +295,10 @@
 
     </div>
 
-    <!-- Firebase SDK Integration -->
+    <!-- Firebase SDK & Firestore Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         
         const firebaseConfig = {
             apiKey: "AIzaSyDjeGh5NodLUR_3r8LBAk1snnJhqet7Rgc",
@@ -322,10 +310,110 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        console.log("Firebase initialized successfully!", app.name);
+        const db = getFirestore(app);
+        console.log("Firebase Firestore connected successfully!");
+
+        // Publish Ride to Firestore Cloud
+        window.publishRideToCloud = async function() {
+            const name = document.getElementById('driverRegName').value;
+            const phone = document.getElementById('driverRegPhone').value;
+            const carName = document.getElementById('driverRegCarName').value;
+            const carNum = document.getElementById('driverRegCarNum').value;
+            const license = document.getElementById('driverRegLicense').value;
+            const from = document.getElementById('driverRegFrom').value.trim();
+            const to = document.getElementById('driverRegTo').value.trim();
+            const fare = document.getElementById('driverRegFare').value;
+
+            if(!name || !phone || !carName || !from || !to || !fare) {
+                alert("Kripya sabhi zaroori details bhariye!");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "rides"), {
+                    name, phone, carName, carNum, license, from, to, fare,
+                    createdAt: new Date().toISOString()
+                });
+
+                const newDriver = { name, phone, carName, carNum, license };
+                localStorage.setItem('tip_driver_profile', JSON.stringify(newDriver));
+                loadDriverDetailsToUI();
+
+                document.getElementById('driverAuthModal').classList.add('hidden');
+                document.getElementById('welcomeScreen').classList.add('hidden');
+                
+                isDriverMode = true;
+                document.getElementById('userSideView').classList.add('hidden');
+                document.getElementById('driverSideView').classList.remove('hidden');
+                document.getElementById('modeToggleBtn').innerText = "User Mode";
+
+                alert("🎉 Ride successfully published to Cloud Firestore!");
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("Error publishing ride. Check console for details.");
+            }
+        };
+
+        // Search Rides from Firestore Cloud
+        window.searchCloudRides = async function() {
+            const fromQuery = document.getElementById('searchFrom').value.trim().toLowerCase();
+            const toQuery = document.getElementById('searchTo').value.trim().toLowerCase();
+            const pass = document.getElementById('searchPassengers').value;
+            const dep = document.getElementById('searchDeparture').value;
+            const container = document.getElementById('dynamicRidesContainer');
+            
+            container.innerHTML = `<div class="p-3 text-center text-xs text-blue-600 font-bold">Searching Cloud Firestore...</div>`;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "rides"));
+                container.innerHTML = '';
+                let found = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const ride = doc.data();
+                    const matchFrom = !fromQuery || (ride.from && ride.from.toLowerCase().includes(fromQuery));
+                    const matchTo = !toQuery || (ride.to && ride.to.toLowerCase().includes(toQuery));
+
+                    if(matchFrom && matchTo) {
+                        found++;
+                        const card = document.createElement('div');
+                        card.className = "bg-white border border-slate-200 p-3.5 rounded-2xl space-y-2.5 shadow-sm";
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center space-x-2.5">
+                                    <div class="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center text-sm font-bold text-blue-700">🚗</div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-900">${ride.name}</h4>
+                                        <p class="text-[10px] text-slate-500">${ride.from} ➔ ${ride.to} (${ride.carName})</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] text-slate-400 block">Fare</span>
+                                    <div class="text-xs font-bold text-blue-700">₹${ride.fare} / seat</div>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2 pt-1">
+                                <a href="tel:${ride.phone}" class="flex-1 bg-blue-50 border border-blue-500 text-blue-700 font-bold py-1.5 rounded-xl text-[11px] flex items-center justify-center space-x-1">
+                                    <span>📞</span><span>Direct Call</span>
+                                </a>
+                                <button onclick="bookInApp()" class="flex-1 bg-slate-900 text-white font-bold py-1.5 rounded-xl text-[11px]">Book Seat</button>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    }
+                });
+
+                if(found === 0) {
+                    container.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">Is route par abhi koi cloud ride nahi hai. Pehli ride publish karein!</div>`;
+                }
+            } catch (e) {
+                console.error("Error fetching rides: ", e);
+                container.innerHTML = `<div class="p-3 text-center text-xs text-red-500">Error loading cloud rides.</div>`;
+            }
+        };
     </script>
 
-    <!-- Script Logic -->
+    <!-- Script Logic for UI & Features -->
     <script>
         let isDriverMode = false;
         let otpStep = 1;
@@ -377,89 +465,15 @@
             document.getElementById('cardDriverCar').innerText = d.carName;
             document.getElementById('cardDriverCarNum').innerText = d.carNum;
             document.getElementById('cardDriverLicense').innerText = d.license;
-
-            document.getElementById('listDriverName').innerText = `${d.name} (Driver)`;
             document.getElementById('activeDriverBannerName').innerText = `Driver: ${d.name}`;
         }
 
-        function executePanIndiaSearch() {
-            const from = document.getElementById('searchFrom').value.trim();
-            const to = document.getElementById('searchTo').value.trim();
-            const dep = document.getElementById('searchDeparture').value;
-            const pass = document.getElementById('searchPassengers').value;
-
-            if(!from || !to) {
-                alert("Kripya 'From' aur 'To' dono shehar/jagah ke naam bhariye!");
-                return;
-            }
-
-            const routeStr = `${from} ➔ ${to}`;
-            document.getElementById('carSectionTitle').innerText = `${routeStr} Rides (${pass}, ${dep})`;
-            document.getElementById('driverDashRoute').innerText = routeStr;
-            document.getElementById('driverBannerRoute').innerText = `Route: ${routeStr}`;
-            document.getElementById('listDriverCarRoute').innerText = `${routeStr} (${getDriverData().carName})`;
-            
-            alert(`🌐 Searching pan-India rides from ${from} to ${to} for ${pass}!`);
-        }
-
-        function openAuthModal(type) {
-            document.getElementById('authScreen').classList.remove('hidden');
-        }
-
-        function closeAuthModal() {
-            document.getElementById('authScreen').classList.add('hidden');
-        }
-
-        function openDriverAuthModal() {
-            document.getElementById('driverAuthModal').classList.remove('hidden');
-            const d = getDriverData();
-            if(d.name !== "Pan-India Verified Partner") {
-                document.getElementById('driverRegName').value = d.name;
-                document.getElementById('driverRegPhone').value = d.phone;
-                document.getElementById('driverRegCarName').value = d.carName;
-                document.getElementById('driverRegCarNum').value = d.carNum;
-                document.getElementById('driverRegLicense').value = d.license;
-            }
-        }
-
-        function closeDriverAuthModal() {
-            document.getElementById('driverAuthModal').classList.add('hidden');
-        }
-
-        function saveDriverDetailsData() {
-            const name = document.getElementById('driverRegName').value;
-            const phone = document.getElementById('driverRegPhone').value;
-            const carName = document.getElementById('driverRegCarName').value;
-            const carNum = document.getElementById('driverRegCarNum').value;
-            const license = document.getElementById('driverRegLicense').value;
-
-            if(!name || !phone || !carName || !carNum || !license) {
-                alert("Kripya sabhi driver details bhariye!");
-                return;
-            }
-
-            const newDriver = { name, phone, carName, carNum, license };
-            localStorage.setItem('tip_driver_profile', JSON.stringify(newDriver));
-            loadDriverDetailsToUI();
-
-            document.getElementById('driverAuthModal').classList.add('hidden');
-            document.getElementById('welcomeScreen').classList.add('hidden');
-            
-            isDriverMode = true;
-            document.getElementById('userSideView').classList.add('hidden');
-            document.getElementById('driverSideView').classList.remove('hidden');
-            document.getElementById('modeToggleBtn').innerText = "User Mode";
-
-            alert("Ride Published Successfully! Welcome to Driver Mode.");
-        }
-
-        function openDriverDetails() {
-            document.getElementById('driverDetailModal').classList.remove('hidden');
-        }
-
-        function closeDriverDetails() {
-            document.getElementById('driverDetailModal').classList.add('hidden');
-        }
+        function openAuthModal() { document.getElementById('authScreen').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('authScreen').classList.add('hidden'); }
+        function openDriverAuthModal() { document.getElementById('driverAuthModal').classList.remove('hidden'); }
+        function closeDriverAuthModal() { document.getElementById('driverAuthModal').classList.add('hidden'); }
+        function openDriverDetails() { document.getElementById('driverDetailModal').classList.remove('hidden'); }
+        function closeDriverDetails() { document.getElementById('driverDetailModal').classList.add('hidden'); }
 
         function logoutApp() {
             localStorage.clear();
@@ -513,12 +527,6 @@
             } else {
                 alert("🚗 Gaadi full ho chuki hai!");
             }
-        }
-
-        function callActiveDriver() {
-            const d = getDriverData();
-            alert(`📞 Connecting directly with driver ${d.name} (${d.phone})...`);
-            window.location.href = `tel:${d.phone}`;
         }
 
         function toggleAppMode() {
