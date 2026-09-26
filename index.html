@@ -29,28 +29,29 @@
             </div>
         </header>
 
-        <!-- EXACT WELCOME SCREEN (Only Group Photo, Icons, Texts & 2 Main Buttons) -->
+        <!-- EXACT WELCOME SCREEN (Group Photo, Icons, Texts & 2 Main Buttons) -->
         <div id="welcomeScreen" class="absolute inset-0 bg-white z-50 flex flex-col justify-between overflow-y-auto pt-4 pb-6">
             <div class="w-full space-y-3">
-                <div class="w-full h-64 sm:h-72 overflow-hidden relative bg-slate-50 flex items-center justify-center p-2">
-                    <img src="1000374478_ce1780.jpg" alt="Tip Car & Bus Official Group Photo" class="w-full h-full object-cover rounded-2xl shadow-md" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=600';">
+                <!-- Group Photo -->
+                <div class="w-full h-72 sm:h-80 overflow-hidden relative bg-slate-50 flex items-center justify-center p-2">
+                    <img src="1000374478_ce1780.jpg" alt="Tip Car & Bus Official Group Photo" class="w-full h-full object-cover rounded-2xl shadow-md" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800';">
                 </div>
 
                 <!-- Car & Bus Icons Emoji Row -->
                 <div class="flex justify-center space-x-3">
-                    <div class="w-10 h-10 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-lg">🚗</div>[cite: 5]
-                    <div class="w-10 h-10 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-lg">🚌</div>[cite: 5]
+                    <div class="w-10 h-10 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-lg">🚗</div>
+                    <div class="w-10 h-10 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-lg">🚌</div>
                 </div>
 
                 <div class="px-6 text-center space-y-1.5">
-                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">Travel anywhere together. Spend smarter.</h2>[cite: 5]
-                    <p class="text-xs text-slate-500">Pan-India trusted ride-sharing platform.</p>[cite: 5]
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">Travel anywhere together. Spend smarter.</h2>
+                    <p class="text-xs text-slate-500">Pan-India trusted ride-sharing platform.</p>
                 </div>
             </div>
 
             <div class="p-6 space-y-2.5">
-                <button onclick="openAuthModal()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-bold py-3.5 rounded-full text-sm shadow-lg transition">User Log in</button>[cite: 5]
-                <button onclick="openDriverAuthModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-full text-xs transition border border-slate-300">🚗 Driver Register / Publish Ride</button>[cite: 5]
+                <button onclick="openAuthModal()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-bold py-3.5 rounded-full text-sm shadow-lg transition">User Log in</button>
+                <button onclick="openDriverAuthModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-full text-xs transition border border-slate-300">🚗 Driver Register / Publish Ride</button>
             </div>
         </div>
 
@@ -167,7 +168,7 @@
                     <button onclick="triggerSOS()" class="bg-red-600 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] shadow-sm animate-pulse">🚨 SOS Safety</button>
                 </div>
 
-                <!-- GOOGLE MAPS STYLE SEARCH CARD WITH SUGGESTIONS -->
+                <!-- GOOGLE MAPS STYLE SEARCH CARD -->
                 <div class="bg-white border-2 border-blue-500/30 rounded-3xl p-4 shadow-sm space-y-3 relative">
                     
                     <!-- From Location Input -->
@@ -189,7 +190,7 @@
                     <button onclick="searchCloudRides()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md transition">Search Rides</button>
                 </div>
 
-                <!-- STATE BORDER-TO-BORDER TRANSIT HUB -->
+                <!-- STATE BORDER TRANSIT HUB -->
                 <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-4 rounded-3xl shadow-md space-y-3">
                     <div class="flex justify-between items-center">
                         <div>
@@ -607,7 +608,7 @@
             }
         };
 
-        function openBookingModalForRide(route, fare, driverShare, driverPhone) {
+        function openBookingModalForRide(route, file, fare, driverShare, driverPhone) {
             document.getElementById('modalRideRoute').innerText = route;
             document.getElementById('modalRideFare').innerText = `Fare: ₹${fare} / seat`;
             document.getElementById('modalDriverShare').innerText = `₹${driverShare}`;
