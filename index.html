@@ -308,6 +308,23 @@
 
     </div>
 
+    <!-- Firebase SDK Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjeGh5NodLUR_3r8LBAk1snnJhqet7Rgc",
+            authDomain: "tip-car-bus-a3877.firebaseapp.com",
+            projectId: "tip-car-bus-a3877",
+            storageBucket: "tip-car-bus-a3877.firebasestorage.app",
+            messagingSenderId: "922711353517",
+            appId: "1:922711353517:web:b73c408e8f9b7e37ebbe24"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        console.log("Firebase initialized successfully!", app.name);
+    </script>
+
     <!-- Script Logic -->
     <script>
         let isDriverMode = false;
