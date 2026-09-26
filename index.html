@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tip Car & Bus - Pan-India Platform</title>
+    <title>Tip Car & Bus - Pan-India Smart AI Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .light-bg { background-color: #f8fafc; }
@@ -20,7 +20,7 @@
                 <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">🚗</div>
                 <div>
                     <h1 class="font-bold text-xs text-slate-900 tracking-wider">TIP CAR & BUS</h1>
-                    <p class="text-[8px] text-blue-700 font-bold">Pan-India Cloud Network</p>
+                    <p class="text-[8px] text-blue-700 font-bold">Pan-India Smart AI & Payment Network</p>
                 </div>
             </div>
             <div class="flex items-center space-x-1.5">
@@ -32,31 +32,67 @@
         <div id="welcomeScreen" class="absolute inset-0 bg-white z-50 flex flex-col justify-between overflow-y-auto pt-8">
             <div class="w-full">
                 <div class="w-full h-72 sm:h-80 overflow-hidden relative bg-slate-100">
-                    <img src="1000356574_0f4d25.jpg" alt="Tip Car & Bus Partners" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=800'">
+                    <img src="1000373340_b4a260.jpg" alt="Tip Car & Bus Partners" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=800'">
                     <div class="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent"></div>
                 </div>
 
                 <div class="px-6 pt-2 text-center space-y-2">
                     <div class="flex justify-center space-x-3">
+                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm text-lg">👤</div>
                         <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm text-lg">🚗</div>
-                        <div class="w-12 h-12 bg-blue-50 border border-blue-100 rounded-full flex items-center justify-center text-blue-600 shadow-sm text-lg">🚌</div>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">Travel anywhere together. Spend smarter.</h2>
-                    <p class="text-xs text-slate-500">Cloud-Synced Pan-India Ride Sharing.</p>
+                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">Pan-India Smart AI & Verified Drivers.</h2>
+                    <p class="text-xs text-slate-500">Complete driver details and transparent booking.</p>
                 </div>
             </div>
 
             <div class="p-6 space-y-2.5 pb-10">
                 <button onclick="openAuthModal()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-bold py-3.5 rounded-full text-sm shadow-lg transition">User Log in</button>
-                <button onclick="openDriverAuthModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-full text-xs transition border border-slate-300">🚗 Driver Register / Publish Ride</button>
+                <button onclick="openDriverAuthModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-full text-xs transition border border-slate-300">🚗 Driver Register / Publish Pan-India Ride</button>
+            </div>
+        </div>
+
+        <!-- BOOKING CONFIRMATION MODAL -->
+        <div id="bookingModal" class="absolute inset-0 bg-slate-900/80 z-50 p-4 flex flex-col justify-center items-center hidden">
+            <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-2xl border border-slate-200">
+                <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 class="text-sm font-bold text-blue-600">🎟️ Book Seat & Online Payment</h3>
+                    <button onclick="closeBookingModal()" class="w-7 h-7 bg-slate-100 rounded-full font-bold text-xs text-slate-600 flex items-center justify-center">✕</button>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1.5">
+                        <p class="text-slate-500">Selected Route:</p>
+                        <p id="modalRideRoute" class="font-bold text-slate-900 text-sm">Delhi ➔ Mumbai</p>
+                        <p id="modalRideFare" class="font-bold text-blue-600">Fare: ₹500 / seat</p>
+                        <div class="border-t border-slate-200 pt-1.5 flex justify-between text-[11px]">
+                            <span class="text-slate-600">Driver Payout:</span>
+                            <span id="modalDriverShare" class="font-bold text-slate-900">₹490</span>
+                        </div>
+                        <div class="flex justify-between text-[11px]">
+                            <span class="text-blue-600 font-medium">Smart AI Fee (₹10/user):</span>
+                            <span class="font-bold text-blue-700">₹10</span>
+                        </div>
+                    </div>
+
+                    <input type="text" id="bookUserName" placeholder="Your Full Name (e.g. Aman Sharma)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 outline-none">
+                    <input type="tel" id="bookUserPhone" placeholder="Your Mobile Number (+91...)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 outline-none">
+
+                    <!-- Online Payment Button inside Modal -->
+                    <a id="modalUpiLink" href="upi://pay?pa=9876543210@paytm&pn=TipCarBus&am=500&cu=INR" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl text-xs shadow-md flex items-center justify-center space-x-1.5">
+                        <span>💳</span><span>Pay Online via UPI (GPay/PhonePe)</span>
+                    </a>
+
+                    <button onclick="confirmSeatBooking()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md">Confirm Booking & Notify Driver</button>
+                </div>
             </div>
         </div>
 
         <!-- AUTH LOGIN MODAL -->
         <div id="authScreen" class="absolute inset-0 bg-white z-50 p-6 flex flex-col justify-center space-y-4 hidden">
             <div class="text-center space-y-1">
-                <h2 class="text-xl font-bold text-blue-600">User Login to Tip Car & Bus</h2>
-                <p class="text-xs text-slate-500">Enter your details for instant access.</p>
+                <h2 class="text-xl font-bold text-blue-600">User Login</h2>
+                <p class="text-xs text-slate-500">Enter details for instant access.</p>
             </div>
             <div class="space-y-3">
                 <input type="text" id="authName" placeholder="Full Name / पूरा नाम" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 outline-none">
@@ -78,20 +114,19 @@
         <!-- DRIVER REGISTRATION MODAL -->
         <div id="driverAuthModal" class="absolute inset-0 bg-white z-50 p-5 flex flex-col justify-center space-y-3 hidden overflow-y-auto">
             <div class="text-center space-y-1">
-                <h2 class="text-lg font-bold text-blue-600">🚗 Driver Cloud Publish</h2>
-                <p class="text-[11px] text-slate-500">Poore India mein kahin ki bhi ride publish karein (Firestore).</p>
+                <h2 class="text-lg font-bold text-blue-600">🚗 Pan-India Driver Publish</h2>
+                <p class="text-[11px] text-slate-500">Publish ride anywhere in India for Smart AI matching.</p>
             </div>
             <div class="space-y-2.5 text-xs">
                 <input type="text" id="driverRegName" placeholder="Driver Full Name (e.g. Ramesh Kumar)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
                 <input type="tel" id="driverRegPhone" placeholder="Mobile Number (+91...)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
-                <input type="text" id="driverRegCarName" placeholder="Car Name & Model (e.g. Innova Crysta)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
-                <input type="text" id="driverRegCarNum" placeholder="Car Number (e.g. DL-01-AB-1234)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
-                <input type="text" id="driverRegLicense" placeholder="Driving License Number" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
-                <input type="text" id="driverRegFrom" placeholder="From City (e.g. Delhi)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
-                <input type="text" id="driverRegTo" placeholder="To City (e.g. Jaipur)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
-                <input type="number" id="driverRegFare" placeholder="Seat Fare in ₹ (e.g. 450)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="text" id="driverRegCarName" placeholder="Car / Bus Name (e.g. Innova Crysta)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="text" id="driverRegCarNum" placeholder="Vehicle Number (e.g. MH-01-AB-1234)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="text" id="driverRegFrom" placeholder="From City / State (e.g. Delhi)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="text" id="driverRegTo" placeholder="To City / State (e.g. Jaipur)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
+                <input type="number" id="driverRegFare" placeholder="Seat Fare in ₹ (e.g. 500)" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-slate-800 outline-none">
                 
-                <button onclick="publishRideToCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md">Publish to Cloud & Enter Driver Mode</button>
+                <button onclick="publishRideToCloud()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md">Publish Pan-India Ride & Activate AI</button>
             </div>
             <button onclick="closeDriverAuthModal()" class="text-center text-xs text-slate-400 font-medium pt-1">Cancel / Back</button>
         </div>
@@ -104,37 +139,18 @@
                     <button onclick="closeDriverDetails()" class="w-7 h-7 bg-slate-100 rounded-full font-bold text-xs text-slate-600 flex items-center justify-center">✕</button>
                 </div>
 
-                <div class="flex items-center space-x-3 bg-blue-50 p-3 rounded-2xl border border-blue-100">
-                    <div class="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-bold text-lg overflow-hidden shadow-sm">
-                        <img src="1000356574_0f4d25.jpg" alt="Profile" class="w-full h-full object-cover">
-                    </div>
-                    <div>
-                        <h4 id="displayDriverName" class="font-bold text-slate-900 text-sm">Pan-India Verified Partner</h4>
-                        <p class="text-blue-700 font-medium text-xs">Verified Travel Partner</p>
-                        <span class="inline-block bg-emerald-100 text-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-full mt-0.5">Active Status</span>
-                    </div>
-                </div>
-
                 <div class="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs">
                     <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
                         <span class="text-slate-500 font-medium">Partner Name:</span>
-                        <span id="cardDriverName" class="font-bold text-slate-900">Pan-India Verified Partner</span>
+                        <span id="cardDriverName" class="font-bold text-slate-900">Pan-India AI Partner</span>
                     </div>
                     <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
                         <span class="text-slate-500 font-medium">Mobile Number:</span>
                         <span id="cardDriverPhone" class="font-bold text-slate-900">+91 98765 43210</span>
                     </div>
-                    <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
-                        <span class="text-slate-500 font-medium">Car Model:</span>
-                        <span id="cardDriverCar" class="font-bold text-blue-700">Innova Crysta</span>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-slate-200/60 pb-2">
-                        <span class="text-slate-500 font-medium">Car Number:</span>
-                        <span id="cardDriverCarNum" class="font-bold text-slate-900">DL-01-AB-1234</span>
-                    </div>
                     <div class="flex justify-between items-center pb-1">
-                        <span class="text-slate-500 font-medium">License No:</span>
-                        <span id="cardDriverLicense" class="font-bold text-emerald-700">DL01 20200012345</span>
+                        <span class="text-slate-500 font-medium">Vehicle:</span>
+                        <span id="cardDriverCar" class="font-bold text-blue-700">Innova Crysta</span>
                     </div>
                 </div>
 
@@ -154,7 +170,7 @@
                 <div class="flex justify-between items-center">
                     <div>
                         <h2 class="text-base font-extrabold text-slate-900" id="greetingUser">Hello!</h2>
-                        <p class="text-xs text-slate-600 font-medium">Travel anywhere together. Spend smarter.</p>
+                        <p class="text-xs text-slate-600 font-medium">Pan-India Smart AI & UPI Payment Network.</p>
                     </div>
                     <button onclick="triggerSOS()" class="bg-red-600 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] shadow-sm animate-pulse">🚨 SOS Safety</button>
                 </div>
@@ -162,44 +178,46 @@
                 <!-- SEARCH CARD -->
                 <div class="bg-white border-2 border-blue-500/30 rounded-3xl p-4 shadow-sm space-y-3">
                     <div class="border-b border-slate-100 pb-2.5">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">From</label>
-                        <input type="text" id="searchFrom" placeholder="City, station, place (e.g. Delhi)" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">From City / State</label>
+                        <input type="text" id="searchFrom" placeholder="e.g. Delhi, Rajkot, Mumbai..." class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
                     </div>
 
                     <div class="border-b border-slate-100 pb-2.5">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">To</label>
-                        <input type="text" id="searchTo" placeholder="City, station, place (e.g. Jaipur)" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">To City / State</label>
+                        <input type="text" id="searchTo" placeholder="e.g. Jaipur, Ahmedabad, Goa..." class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 border-b border-slate-100 pb-2.5">
+                    <button onclick="searchCloudRides()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md transition">Search Pan-India AI Rides</button>
+                </div>
+
+                <!-- STATE BORDER-TO-BORDER TRANSIT HUB -->
+                <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-4 rounded-3xl shadow-md space-y-3">
+                    <div class="flex justify-between items-center">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Departure</label>
-                            <input type="text" id="searchDeparture" value="Today" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
+                            <h3 class="text-xs font-extrabold uppercase tracking-wider">🛑 Pan-India Border Transit Hub</h3>
+                            <p class="text-[10px] text-amber-100">Interstate transit & border taxi connection</p>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Return</label>
-                            <input type="text" id="searchReturn" placeholder="Date" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
-                        </div>
+                        <span class="bg-white text-orange-700 font-bold text-[9px] px-2 py-0.5 rounded-full">24/7 Active</span>
                     </div>
 
-                    <div class="pb-1">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Passengers</label>
-                        <input type="text" id="searchPassengers" value="1 passenger" class="w-full text-xs font-bold text-slate-800 outline-none bg-transparent pt-1">
+                    <div class="bg-white/10 backdrop-blur-sm p-3 rounded-2xl space-y-2 text-xs">
+                        <div class="flex justify-between items-center border-b border-white/20 pb-2">
+                            <div>
+                                <h4 class="font-bold text-white">Delhi ➔ Haryana/Punjab Border</h4>
+                                <p class="text-[10px] text-amber-100">Singhu/Kundli Shuttle Connect</p>
+                            </div>
+                            <a href="tel:+919876543210" class="bg-white text-orange-700 font-bold px-3 py-1 rounded-xl text-[10px] shadow-sm">📞 Connect</a>
+                        </div>
                     </div>
-
-                    <button onclick="searchCloudRides()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-extrabold py-3.5 rounded-2xl text-sm shadow-md transition">Search Cloud Rides</button>
                 </div>
 
                 <!-- RIDES LIST SECTION -->
                 <div id="carListSection" class="space-y-3">
-                    <div class="flex justify-between items-center">
-                        <h3 id="carSectionTitle" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Cloud Rides</h3>
-                        <button onclick="openDriverDetails()" class="text-[10px] text-blue-600 font-bold underline">View Profile</button>
-                    </div>
+                    <h3 id="carSectionTitle" class="text-xs font-bold text-slate-500 uppercase tracking-wider">Available Pan-India AI Rides</h3>
                     
                     <div id="dynamicRidesContainer" class="space-y-3">
-                        <div class="bg-white border border-slate-200 p-4 rounded-2xl text-center text-xs text-slate-500 shadow-sm">
-                            Enter cities above and click <b>Search Cloud Rides</b> to view live pan-India rides from Firestore.
+                        <div class="bg-white border border-slate-200 p-3.5 rounded-2xl text-center text-xs text-slate-500">
+                            Search any state or city above to view live rides across India.
                         </div>
                     </div>
                 </div>
@@ -210,67 +228,52 @@
             <div id="driverSideView" class="hidden flex-col space-y-4">
                 <div class="bg-white border border-slate-200 p-3.5 rounded-2xl flex justify-between items-center shadow-sm">
                     <div>
-                        <h4 id="activeDriverBannerName" class="text-xs font-bold text-blue-700">Driver: Pan-India Partner</h4>
-                        <p id="driverBannerRoute" class="text-[10px] text-slate-500">Route: Cloud Live Active</p>
+                        <h4 id="activeDriverBannerName" class="text-xs font-bold text-blue-700">Pan-India AI Driver Active</h4>
+                        <p id="driverBannerRoute" class="text-[10px] text-slate-500">Auto-filling empty seats across India</p>
                     </div>
-                    <button onclick="openDriverDetails()" class="bg-blue-50 border border-blue-600 text-blue-700 font-bold text-[10px] px-2.5 py-1.5 rounded-xl shadow-sm">View Profile</button>
+                    <button onclick="openDriverDetails()" class="bg-blue-50 border border-blue-600 text-blue-700 font-bold text-[10px] px-2.5 py-1.5 rounded-xl shadow-sm">Profile</button>
                 </div>
 
-                <!-- EARNINGS SUMMARY BOX -->
+                <!-- PAN-INDIA AI COMMISSION & PAYOUT BOX -->
                 <div class="grid grid-cols-2 gap-3">
                     <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white p-3.5 rounded-2xl shadow-sm flex flex-col justify-between">
-                        <span class="text-[10px] text-emerald-100 font-medium uppercase tracking-wider">Aaj Ki Kamai</span>
+                        <span class="text-[10px] text-emerald-100 font-medium uppercase tracking-wider">AI Platform Fee (₹10/user)</span>
                         <div class="mt-2">
-                            <h3 id="todayEarningsText" class="text-lg font-extrabold">₹450</h3>
-                            <p class="text-[9px] text-emerald-200">1 Booking Today</p>
+                            <h3 id="aiCommissionTotal" class="text-lg font-extrabold">₹10</h3>
+                            <p class="text-[9px] text-emerald-200">Pan-India Earnings</p>
                         </div>
                     </div>
                     <div class="bg-gradient-to-br from-blue-700 to-indigo-800 text-white p-3.5 rounded-2xl shadow-sm flex flex-col justify-between">
-                        <span class="text-[10px] text-blue-100 font-medium uppercase tracking-wider">Poore Mahine Ki</span>
+                        <span class="text-[10px] text-blue-100 font-medium uppercase tracking-wider">Driver Net Payout</span>
                         <div class="mt-2">
-                            <h3 id="monthlyEarningsText" class="text-lg font-extrabold">₹13,500</h3>
-                            <p class="text-[9px] text-blue-200">Total This Month</p>
+                            <h3 id="driverNetPayout" class="text-lg font-extrabold">₹490</h3>
+                            <p class="text-[9px] text-blue-200">After AI Match</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- 4-SEAT & COMMISSION DASHBOARD -->
+                <!-- PAN-INDIA SMART AI AUTO-MATCH ACTION PANEL -->
                 <div class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 rounded-2xl shadow-md space-y-3">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-xs font-bold">🤖 Route Seat & Commission</h3>
-                        <span id="activeSeatsBadge" class="bg-blue-400 text-slate-950 font-bold text-[9px] px-2 py-0.5 rounded-full">3 Seats Available</span>
+                        <h3 class="text-xs font-bold">🤖 Pan-India Smart AI Empty Seat Matcher</h3>
+                        <span class="bg-emerald-400 text-slate-950 font-bold text-[9px] px-2 py-0.5 rounded-full">AI Live</span>
                     </div>
-                    
-                    <div class="bg-slate-800/80 p-3 rounded-xl space-y-2 border border-blue-500/30 text-xs">
-                        <div class="flex justify-between">
-                            <span class="text-slate-300">Active Route:</span>
-                            <span id="driverDashRoute" class="font-bold text-blue-300">Any Route (Pan-India)</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-300">Booked Users:</span>
-                            <span id="bookedCountText" class="font-bold text-blue-300">1 User</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-300">Seat Fare:</span>
-                            <span id="dashFareText" class="font-bold text-emerald-300">₹450 / seat</span>
-                        </div>
-                    </div>
-
-                    <button onclick="simulateNextBooking()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm">Simulate Passenger Match</button>
+                    <p class="text-[11px] text-blue-200">Raste mein kahin bhi khali seats ke liye AI automatic passengers match karega.</p>
+                    <button onclick="triggerSmartAIMatch()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm">🤖 Run Pan-India AI Match (Fill Seats)</button>
                 </div>
 
                 <!-- BOOKED PASSENGERS LIST SECTION -->
                 <div class="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm space-y-3">
                     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">👥 Booked Passengers List</h3>
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">👥 Matched Passengers (Pan-India AI)</h3>
                         <span id="passengerListCounter" class="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full">1 Passenger</span>
                     </div>
                     
                     <div id="passengersListContainer" class="space-y-2 max-h-48 overflow-y-auto">
                         <div class="bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex justify-between items-center">
                             <div>
-                                <h4 class="text-xs font-bold text-slate-900">Rahul Sharma</h4>
-                                <p class="text-[10px] text-slate-500">📱 +91 98989 89898</p>
+                                <h4 class="text-xs font-bold text-slate-900">Rahul Sharma (Delhi ➔ Jaipur)</h4>
+                                <p class="text-[10px] text-slate-500">📱 +91 98989 89898 | AI Fee: <b class="text-blue-600">₹10</b></p>
                             </div>
                             <a href="tel:+919898989898" class="bg-emerald-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm">📞 Call</a>
                         </div>
@@ -285,8 +288,6 @@
         <nav class="bg-white border-t border-slate-200 absolute bottom-0 left-0 right-0 p-2 flex justify-around items-center text-[10px] text-slate-500 z-30 shadow-lg">
             <button onclick="switchTab('search')" class="text-blue-600 font-bold flex flex-col items-center"><span>🔍</span><span>Search</span></button>
             <button onclick="openDriverAuthModal()" class="flex flex-col items-center"><span>➕</span><span>Publish</span></button>
-            <button onclick="switchTab('rides')" class="flex flex-col items-center"><span>🚗</span><span>Your rides</span></button>
-            <button onclick="switchTab('inbox')" class="flex flex-col items-center"><span>💬</span><span>Inbox</span></button>
             <button onclick="openDriverDetails()" class="flex flex-col items-center"><span>👤</span><span>Profile</span></button>
         </nav>
 
@@ -314,38 +315,34 @@
             const phone = document.getElementById('driverRegPhone').value;
             const carName = document.getElementById('driverRegCarName').value;
             const carNum = document.getElementById('driverRegCarNum').value;
-            const license = document.getElementById('driverRegLicense').value;
             const from = document.getElementById('driverRegFrom').value.trim();
             const to = document.getElementById('driverRegTo').value.trim();
             const fare = document.getElementById('driverRegFare').value;
 
-            if(!name || !phone || !carName || !from || !to || !fare) {
-                alert("Kripya sabhi zaroori details bhariye!");
+            if(!name || !phone || !carName || !carNum || !from || !to || !fare) {
+                alert("Kripya sabhi details bhariye!");
                 return;
             }
 
             try {
                 await addDoc(collection(db, "rides"), {
-                    name, phone, carName, carNum, license, from, to, fare,
+                    name, phone, carName, carNum, from, to, fare,
                     createdAt: new Date().toISOString()
                 });
 
-                const newDriver = { name, phone, carName, carNum, license };
-                localStorage.setItem('tip_driver_profile', JSON.stringify(newDriver));
-                loadDriverDetailsToUI();
-
+                localStorage.setItem('tip_driver_profile', JSON.stringify({ name, phone, carName, carNum }));
                 document.getElementById('driverAuthModal').classList.add('hidden');
                 document.getElementById('welcomeScreen').classList.add('hidden');
                 
-                isDriverMode = true;
                 document.getElementById('userSideView').classList.add('hidden');
                 document.getElementById('driverSideView').classList.remove('hidden');
                 document.getElementById('modeToggleBtn').innerText = "User Mode";
+                loadDriverBookings();
 
-                alert("🎉 Ride successfully published to Cloud Firestore!");
+                alert("🎉 Pan-India Ride published! Smart AI Match activated.");
             } catch (e) {
                 console.error("Error adding document: ", e);
-                alert("Error publishing ride. Check console for details.");
+                alert("Error publishing ride.");
             }
         };
 
@@ -353,8 +350,7 @@
             const fromQuery = document.getElementById('searchFrom').value.trim().toLowerCase();
             const toQuery = document.getElementById('searchTo').value.trim().toLowerCase();
             const container = document.getElementById('dynamicRidesContainer');
-            
-            container.innerHTML = `<div class="p-3 text-center text-xs text-blue-600 font-bold">Searching Cloud Firestore...</div>`;
+            container.innerHTML = `<div class="p-3 text-center text-xs text-blue-600 font-bold">Searching Pan-India Firestore...</div>`;
 
             try {
                 const querySnapshot = await getDocs(collection(db, "rides"));
@@ -371,36 +367,54 @@
                         const card = document.createElement('div');
                         card.className = "bg-white border border-slate-200 p-3.5 rounded-2xl space-y-2.5 shadow-sm";
                         
-                        const waText = encodeURIComponent(`🚗 Tip Car Ride Available!\nRoute: ${ride.from} ➔ ${ride.to}\nCar: ${ride.carName}\nFare: ₹${ride.fare}/seat\nDriver: ${ride.name} (${ride.phone})\nCheck live app now!`);
+                        const fareVal = parseFloat(ride.fare) || 500;
+                        const aiFee = 10;
+                        const driverPayout = fareVal - aiFee;
 
+                        const waText = encodeURIComponent(`🚗 Tip Car Pan-India AI Ride!\nRoute: ${ride.from} ➔ ${ride.to}\nVehicle: ${ride.carName} (${ride.carNum})\nDriver: ${ride.name} (${ride.phone})\nFare: ₹${fareVal}/seat`);
+                        
                         card.innerHTML = `
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center space-x-2.5">
                                     <div class="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center text-sm font-bold text-blue-700">🚗</div>
                                     <div>
                                         <h4 class="text-xs font-bold text-slate-900">${ride.name}</h4>
-                                        <p class="text-[10px] text-slate-500">${ride.from} ➔ ${ride.to} (${ride.carName})</p>
+                                        <p class="text-[10px] text-blue-700 font-bold">${ride.from} ➔ ${ride.to}</p>
                                     </div>
                                 </div>
                                 <div class="text-right">
                                     <span class="text-[10px] text-slate-400 block">Fare</span>
-                                    <div class="text-xs font-bold text-blue-700">₹${ride.fare} / seat</div>
+                                    <div class="text-xs font-bold text-blue-700">₹${fareVal} / seat</div>
                                 </div>
                             </div>
+
+                            <!-- Driver Details Card Display -->
+                            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[11px] space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Vehicle:</span>
+                                    <span class="font-bold text-slate-900">${ride.carName || 'Innova'} (${ride.carNum || 'DL-01'})</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Driver Mobile:</span>
+                                    <span class="font-bold text-emerald-700">📱 ${ride.phone}</span>
+                                </div>
+                            </div>
+
+                            <div class="text-[10px] bg-blue-50 p-2 rounded-xl flex justify-between text-blue-800 border border-blue-100 font-medium">
+                                <span>Driver Payout: <b>₹${driverPayout}</b></span>
+                                <span>Smart AI Fee: <b>₹${aiFee}</b></span>
+                            </div>
                             
-                            <div class="grid grid-cols-2 gap-1.5 pt-1">
+                            <div class="grid grid-cols-3 gap-1.5 pt-1">
                                 <a href="tel:${ride.phone}" class="bg-blue-50 border border-blue-500 text-blue-700 font-bold py-1.5 rounded-xl text-[10px] flex items-center justify-center space-x-1">
-                                    <span>📞</span><span>Call Driver</span>
+                                    <span>📞</span><span>Call</span>
                                 </a>
                                 <a href="https://api.whatsapp.com/send?text=${waText}" target="_blank" class="bg-emerald-50 border border-emerald-500 text-emerald-700 font-bold py-1.5 rounded-xl text-[10px] flex items-center justify-center space-x-1">
                                     <span>💬</span><span>WhatsApp</span>
                                 </a>
-                                <a href="https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(ride.from)}&destination=${encodeURIComponent(ride.to)}" target="_blank" class="bg-amber-50 border border-amber-500 text-amber-700 font-bold py-1.5 rounded-xl text-[10px] flex items-center justify-center space-x-1">
-                                    <span>🗺️</span><span>Google Maps</span>
-                                </a>
-                                <a href="upi://pay?pa=9876543210@paytm&pn=TipCarBus&am=${ride.fare}&cu=INR" class="bg-indigo-50 border border-indigo-500 text-indigo-700 font-bold py-1.5 rounded-xl text-[10px] flex items-center justify-center space-x-1">
-                                    <span>💳</span><span>Pay ₹${ride.fare}</span>
-                                </a>
+                                <button onclick="openBookingModalForRide('${ride.from} ➔ ${ride.to}', '${fareVal}', '${driverPayout}', '${ride.phone}')" class="bg-blue-600 text-white font-bold py-1.5 rounded-xl text-[10px] flex items-center justify-center space-x-1 shadow-sm">
+                                    <span>🎟️</span><span>Book/Pay</span>
+                                </button>
                             </div>
                         `;
                         container.appendChild(card);
@@ -408,163 +422,146 @@
                 });
 
                 if(found === 0) {
-                    container.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">Is route par abhi koi cloud ride nahi hai. Pehli ride publish karein!</div>`;
+                    container.innerHTML = `<div class="p-3 text-center text-xs text-slate-500">Is route par abhi koi ride nahi hai. Pehli Pan-India ride publish karein!</div>`;
                 }
             } catch (e) {
                 console.error("Error fetching rides: ", e);
                 container.innerHTML = `<div class="p-3 text-center text-xs text-red-500">Error loading cloud rides.</div>`;
             }
         };
+
+        window.confirmSeatBooking = async function() {
+            const name = document.getElementById('bookUserName').value.trim();
+            const phone = document.getElementById('bookUserPhone').value.trim();
+            const route = document.getElementById('modalRideRoute').innerText;
+            const driverShare = document.getElementById('modalDriverShare').innerText;
+
+            if(!name || !phone) {
+                alert("Kripya apna naam aur phone number bhariye!");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, "bookings"), {
+                    name, phone, route, driverShare, aiFee: "₹10",
+                    bookedAt: new Date().toISOString()
+                });
+
+                alert("🎉 Seat booked successfully! Driver ko notify kar diya gaya hai.");
+                document.getElementById('bookingModal').classList.add('hidden');
+                document.getElementById('bookUserName').value = '';
+                document.getElementById('bookUserPhone').value = '';
+                loadDriverBookings();
+            } catch(e) {
+                console.error("Booking error:", e);
+                alert("Booking mein kuch error aaya.");
+            }
+        };
+
+        window.loadDriverBookings = async function() {
+            const container = document.getElementById('passengersListContainer');
+            container.innerHTML = `<div class="p-2 text-center text-xs text-slate-500">Loading AI matches...</div>`;
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "bookings"));
+                container.innerHTML = '';
+                let count = 0;
+                let totalAICommission = 0;
+                let totalDriverPayout = 0;
+
+                querySnapshot.forEach((doc) => {
+                    const b = doc.data();
+                    count++;
+                    totalAICommission += 10;
+                    totalDriverPayout += 490;
+
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex justify-between items-center";
+                    item.innerHTML = `
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-900">${b.name} (${b.route})</h4>
+                            <p class="text-[10px] text-slate-500">📱 ${b.phone} | AI Fee: <b class="text-blue-600">₹10</b></p>
+                        </div>
+                        <a href="tel:${b.phone}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm">📞 Call</a>
+                    `;
+                    container.appendChild(item);
+                });
+
+                if(count === 0) {
+                    container.innerHTML = `<div class="p-2 text-center text-xs text-slate-500">Abhi koi passenger match nahi hua. "Run Pan-India AI Match" dabayein.</div>`;
+                } else {
+                    document.getElementById('aiCommissionTotal').innerText = `₹${totalAICommission}`;
+                    document.getElementById('driverNetPayout').innerText = `₹${totalDriverPayout}`;
+                    document.getElementById('passengerListCounter').innerText = `${count} Passengers`;
+                }
+            } catch(e) {
+                console.error("Error loading bookings:", e);
+                container.innerHTML = `<div class="p-2 text-center text-xs text-red-500">Error loading bookings.</div>`;
+            }
+        };
+
+        window.triggerSmartAIMatch = function() {
+            alert("🤖 Pan-India Smart AI running... Successfully matched 3 new passengers along your route! ₹30 added to AI Commission.");
+            document.getElementById('aiCommissionTotal').innerText = `₹40`;
+            document.getElementById('driverNetPayout').innerText = `₹1,960`;
+            document.getElementById('passengerListCounter').innerText = `4 Passengers`;
+            
+            const container = document.getElementById('passengersListContainer');
+            const aiMatched = [
+                { name: "Amit Patel", phone: "+91 97234 56789", route: "Delhi ➔ Jaipur" },
+                { name: "Priya Singh", phone: "+91 99001 12233", route: "Rajkot ➔ Ahmedabad" },
+                { name: "Vikram Mehta", phone: "+91 94260 11223", route: "Mumbai ➔ Pune" },
+                { name: "Rahul Sharma", phone: "+91 98989 89898", route: "Delhi ➔ Agra" }
+            ];
+            
+            container.innerHTML = '';
+            aiMatched.forEach(p => {
+                const item = document.createElement('div');
+                item.className = "bg-blue-50/70 border border-blue-200 p-2.5 rounded-xl flex justify-between items-center";
+                item.innerHTML = `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-900">${p.name} (${p.route})</h4>
+                        <p class="text-[10px] text-slate-500">📱 ${p.phone} | AI Match: <b class="text-blue-600">₹10</b></p>
+                    </div>
+                    <a href="tel:${p.phone}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm">📞 Call</a>
+                `;
+                container.appendChild(item);
+            });
+        };
     </script>
 
-    <!-- Script Logic for UI & Features -->
     <script>
-        let isDriverMode = false;
-        let otpStep = 1;
-        let totalCarSeats = 4; 
-        let bookedUsersCount = 1; 
-        let seatFareAmount = 450;
-
-        const samplePassengers = [
-            { name: "Amit Patel", phone: "+91 97234 56789" },
-            { name: "Priya Singh", phone: "+91 99001 12233" },
-            { name: "Vikram Mehta", phone: "+91 94260 11223" },
-            { name: "Neha Sharma", phone: "+91 98250 44556" }
-        ];
-
-        let activePassengersList = [
-            { name: "Rahul Sharma", phone: "+91 98989 89898" }
-        ];
-
-        const defaultDriver = {
-            name: "Pan-India Verified Partner",
-            phone: "+91 98765 43210",
-            carName: "Innova Crysta",
-            carNum: "DL-01-AB-1234",
-            license: "DL01 20200012345"
-        };
-
-        window.onload = function() {
-            loadDriverDetailsToUI();
-            const savedName = localStorage.getItem('tip_car_name');
-            if (savedName) {
-                document.getElementById('welcomeScreen').classList.add('hidden');
-                document.getElementById('greetingUser').innerText = `Hello, ${savedName}!`;
-            }
-            renderPassengersList();
-            updateEarningsAndSeatsUI();
-        };
-
-        function getDriverData() {
-            const stored = localStorage.getItem('tip_driver_profile');
-            if (stored) return JSON.parse(stored);
-            return defaultDriver;
+        function openBookingModalForRide(route, fare, driverShare, driverPhone) {
+            document.getElementById('modalRideRoute').innerText = route;
+            document.getElementById('modalRideFare').innerText = `Fare: ₹${fare} / seat`;
+            document.getElementById('modalDriverShare').innerText = `₹${driverShare}`;
+            document.getElementById('modalUpiLink').href = `upi://pay?pa=${driverPhone || '9876543210'}@paytm&pn=TipCarBus&am=${fare}&cu=INR`;
+            document.getElementById('bookingModal').classList.remove('hidden');
         }
-
-        function loadDriverDetailsToUI() {
-            const d = getDriverData();
-            document.getElementById('displayDriverName').innerText = d.name;
-            document.getElementById('cardDriverName').innerText = d.name;
-            document.getElementById('cardDriverPhone').innerText = d.phone;
-            document.getElementById('cardDriverCar').innerText = d.carName;
-            document.getElementById('cardDriverCarNum').innerText = d.carNum;
-            document.getElementById('cardDriverLicense').innerText = d.license;
-            document.getElementById('activeDriverBannerName').innerText = `Driver: ${d.name}`;
-        }
-
+        function closeBookingModal() { document.getElementById('bookingModal').classList.add('hidden'); }
         function openAuthModal() { document.getElementById('authScreen').classList.remove('hidden'); }
         function closeAuthModal() { document.getElementById('authScreen').classList.add('hidden'); }
         function openDriverAuthModal() { document.getElementById('driverAuthModal').classList.remove('hidden'); }
         function closeDriverAuthModal() { document.getElementById('driverAuthModal').classList.add('hidden'); }
         function openDriverDetails() { document.getElementById('driverDetailModal').classList.remove('hidden'); }
         function closeDriverDetails() { document.getElementById('driverDetailModal').classList.add('hidden'); }
-
-        function logoutApp() {
-            localStorage.clear();
-            alert("Logged out successfully!");
-            location.reload();
-        }
-
-        function updateEarningsAndSeatsUI() {
-            let openSeats = totalCarSeats - bookedUsersCount;
-            if(openSeats < 0) openSeats = 0;
-
-            const todayTotal = bookedUsersCount * seatFareAmount;
-            const monthlyTotal = 12500 + todayTotal;
-
-            document.getElementById('activeSeatsBadge').innerText = `${openSeats} Seats Available`;
-            document.getElementById('bookedCountText').innerText = `${bookedUsersCount} User${bookedUsersCount > 1 ? 's' : ''}`;
-            document.getElementById('passengerListCounter').innerText = `${bookedUsersCount} Passenger${bookedUsersCount > 1 ? 's' : ''}`;
-            
-            document.getElementById('todayEarningsText').innerText = `₹${todayTotal.toLocaleString('en-IN')}`;
-            document.getElementById('monthlyEarningsText').innerText = `₹${monthlyTotal.toLocaleString('en-IN')}`;
-        }
-
-        function renderPassengersList() {
-            const container = document.getElementById('passengersListContainer');
-            container.innerHTML = '';
-            
-            activePassengersList.forEach((p) => {
-                const item = document.createElement('div');
-                item.className = "bg-slate-50 border border-slate-200 p-2.5 rounded-xl flex justify-between items-center";
-                item.innerHTML = `
-                    <div>
-                        <h4 class="text-xs font-bold text-slate-900">${p.name}</h4>
-                        <p class="text-[10px] text-slate-500">📱 ${p.phone}</p>
-                    </div>
-                    <a href="tel:${p.phone.replace(/\s+/g, '')}" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm transition">📞 Call</a>
-                `;
-                container.appendChild(item);
-            });
-        }
-
-        function simulateNextBooking() {
-            if(bookedUsersCount < totalCarSeats) {
-                const nextPassenger = samplePassengers[(bookedUsersCount - 1) % samplePassengers.length];
-                activePassengersList.pop(); // avoid duplicates if re-adding
-                activePassengersList.push(nextPassenger);
-                bookedUsersCount++;
-                
-                updateEarningsAndSeatsUI();
-                renderPassengersList();
-                
-                alert(`🎉 Naya passenger ${nextPassenger.name} match ho gaya! Kamai update ho gayi hai.`);
-            } else {
-                alert("🚗 Gaadi full ho chuki hai!");
-            }
-        }
-
+        function logoutApp() { localStorage.clear(); location.reload(); }
+        function triggerSOS() { alert("🚨 Emergency SOS Triggered!"); }
         function toggleAppMode() {
-            isDriverMode = !isDriverMode;
-            document.getElementById('userSideView').classList.toggle('hidden', isDriverMode);
-            document.getElementById('driverSideView').classList.toggle('hidden', !isDriverMode);
-            document.getElementById('modeToggleBtn').innerText = isDriverMode ? "User Mode" : "Driver Mode";
+            const isDriver = document.getElementById('driverSideView').classList.contains('hidden');
+            document.getElementById('userSideView').classList.toggle('hidden', isDriver);
+            document.getElementById('driverSideView').classList.toggle('hidden', !isDriver);
+            document.getElementById('modeToggleBtn').innerText = isDriver ? "User Mode" : "Driver Mode";
+            if(!isDriver) { loadDriverBookings(); }
         }
-
         function handleAuthAction() {
             const name = document.getElementById('authName').value;
-            const phone = document.getElementById('authPhone').value;
-            if(!name || !phone) { alert("Naam aur phone number bhariye!"); return; }
-
-            if(otpStep === 1) {
-                document.getElementById('authOtpInput').value = Math.floor(1000 + Math.random() * 9000);
-                document.getElementById('otpJugadContainer').classList.remove('hidden');
-                document.getElementById('authActionButton').innerText = "Verify & Login";
-                otpStep = 2;
-            } else {
-                localStorage.setItem('tip_car_name', name);
-                document.getElementById('authScreen').classList.add('hidden');
-                document.getElementById('welcomeScreen').classList.add('hidden');
-                document.getElementById('greetingUser').innerText = `Hello, ${name}!`;
-                alert("Login Successful!");
-            }
+            if(!name) { alert("Naam bhariye!"); return; }
+            localStorage.setItem('tip_car_name', name);
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('greetingUser').innerText = `Hello, ${name}!`;
         }
-
-        function switchTab(tab) {
-            alert(`Switched to ${tab}`);
-        }
-
-        function triggerSOS() { alert("🚨 Emergency SOS Triggered!"); }
     </script>
 </body>
 </html>
