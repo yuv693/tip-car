@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tip Car & Bus - Pan-India Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google AdSense Script Integration -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6561716383231322" crossorigin="anonymous"></script>
     <style>
         .light-bg { background-color: #f8fafc; }
         .suggestion-item:hover { background-color: #f1f5f9; }
@@ -29,27 +31,27 @@
             </div>
         </header>
 
-        <!-- EXACT WELCOME SCREEN (Group Photo, Icons, Texts & 2 Main Buttons) -->
-        <div id="welcomeScreen" class="absolute inset-0 bg-white z-50 flex flex-col justify-between overflow-y-auto pt-4 pb-6">
-            <div class="w-full space-y-3">
-                <!-- Group Photo -->
-                <div class="w-full h-72 sm:h-80 overflow-hidden relative bg-slate-50 flex items-center justify-center p-2">
-                    <img src="1000374478_ce1780.jpg" alt="Tip Car & Bus Official Group Photo" class="w-full h-full object-cover rounded-2xl shadow-md" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800';">
-                </div>
-
-                <!-- Car & Bus Icons Emoji Row -->
-                <div class="flex justify-center space-x-3">
-                    <div class="w-10 h-10 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-lg">🚗</div>
-                    <div class="w-10 h-10 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-lg">🚌</div>
-                </div>
-
-                <div class="px-6 text-center space-y-1.5">
-                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-snug">Travel anywhere together. Spend smarter.</h2>
-                    <p class="text-xs text-slate-500">Pan-India trusted ride-sharing platform.</p>
-                </div>
+        <!-- WELCOME SCREEN (Buttons moved slightly higher for better visibility) -->
+        <div id="welcomeScreen" class="absolute inset-0 bg-white z-50 flex flex-col justify-center overflow-y-auto px-6 py-4 space-y-4">
+            
+            <!-- Group Photo -->
+            <div class="w-full h-56 sm:h-64 overflow-hidden relative bg-slate-50 flex items-center justify-center p-1">
+                <img src="1000374478_ce1780.jpg" alt="Tip Car & Bus Official Group Photo" class="w-full h-full object-cover rounded-2xl shadow-md" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=800';">
             </div>
 
-            <div class="p-6 space-y-2.5">
+            <!-- Car & Bus Icons Emoji Row -->
+            <div class="flex justify-center space-x-3">
+                <div class="w-9 h-9 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-base">🚗</div>
+                <div class="w-9 h-9 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center shadow-sm text-base">🚌</div>
+            </div>
+
+            <div class="text-center space-y-1">
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight leading-snug">Travel anywhere together. Spend smarter.</h2>
+                <p class="text-xs text-slate-500">Pan-India trusted ride-sharing platform.</p>
+            </div>
+
+            <!-- Main Action Buttons (Moved Up) -->
+            <div class="space-y-2.5 pt-2">
                 <button onclick="openAuthModal()" class="w-full bg-[#0066ff] hover:bg-blue-700 text-white font-bold py-3.5 rounded-full text-sm shadow-lg transition">User Log in</button>
                 <button onclick="openDriverAuthModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-full text-xs transition border border-slate-300">🚗 Driver Register / Publish Ride</button>
             </div>
@@ -156,6 +158,19 @@
 
         <!-- MAIN APP CONTENT -->
         <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-24 light-bg">
+
+            <!-- REAL GOOGLE AD BANNER (TipCarBanner) - PLACED IN MAIN SECTION -->
+            <div class="bg-white border border-slate-200 p-2 rounded-2xl shadow-sm text-center overflow-hidden mb-2">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-6561716383231322"
+                     data-ad-slot="4188788253"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
 
             <!-- USER SIDE VIEW -->
             <div id="userSideView" class="flex flex-col space-y-4 relative">
@@ -608,7 +623,7 @@
             }
         };
 
-        function openBookingModalForRide(route, file, fare, driverShare, driverPhone) {
+        function openBookingModalForRide(route, fare, driverShare, driverPhone) {
             document.getElementById('modalRideRoute').innerText = route;
             document.getElementById('modalRideFare').innerText = `Fare: ₹${fare} / seat`;
             document.getElementById('modalDriverShare').innerText = `₹${driverShare}`;
