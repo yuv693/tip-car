@@ -1,0 +1,39 @@
+name: Flutter mobile checks
+
+on:
+  pull_request:
+    branches: [tipcarbus-starter]
+    paths:
+      - 'mobile/**'
+      - 'supabase/**'
+      - '.github/workflows/flutter-mobile-check.yml'
+  workflow_dispatch:
+
+jobs:
+  flutter-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+          working-directory: mobile
+      - name: Install dependencies
+        working-directory: mobile
+        run: flutter pub get
+      - name: Analyze
+        working-directory: mobile
+        run: flutter analyze
+      - name: Run tests
+        working-directory: mobile
+        run: flutter test
+      - name: Build debug APK
+        working-directory: mobile
+        run: flutter build apk --debug
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tip-car-debug-apk
+          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
