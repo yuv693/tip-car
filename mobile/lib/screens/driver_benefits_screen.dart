@@ -112,8 +112,8 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: const [
-                  CircleAvatar(backgroundColor: Color(0xffe8f0ff), child: Icon(Icons.shield_outlined, color: blue)),
+                Row(children: [
+                  const CircleAvatar(backgroundColor: Color(0xffe8f0ff), child: Icon(Icons.shield_outlined, color: blue)),
                   SizedBox(width: 12),
                   Expanded(child: Text('Complete 1,000 rides', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
                   Text('$completedRides / 1,000', style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
