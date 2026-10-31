@@ -30,7 +30,8 @@ begin
     if v_driver_id is not null then
       insert into public.driver_commissions(booking_id, driver_id, passenger_id, amount)
       values (new.id, v_driver_id, new.passenger_id, 20)
-      on conflict (booking_id) do nothing;
+      on conflict (booking_id) do update
+        set status = 'accrued', reversed_at = null;
     end if;
   elsif new.status = 'cancelled' and (tg_op = 'INSERT' or old.status is distinct from new.status) then
     update public.driver_commissions
