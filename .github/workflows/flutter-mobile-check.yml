@@ -18,7 +18,6 @@ jobs:
         with:
           channel: stable
           cache: true
-          working-directory: mobile
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
