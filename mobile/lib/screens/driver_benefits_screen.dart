@@ -167,8 +167,8 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-            child: const Padding(
-              padding: EdgeInsets.all(18),
+            child: Padding(
+              padding: const EdgeInsets.all(18),
               child: Row(children: [
                 CircleAvatar(backgroundColor: Color(0xffe8f8ef), child: Icon(Icons.currency_rupee, color: Color(0xff16834a))),
                 SizedBox(width: 12),
