@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DriverBenefitsScreen extends StatefulWidget {
-  const DriverBenefitsScreen({super.key});
+  final bool configured;
+  const DriverBenefitsScreen({super.key, required this.configured});
 
   @override
   State<DriverBenefitsScreen> createState() => _DriverBenefitsScreenState();
@@ -11,6 +13,62 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
   final from = TextEditingController(text: 'Porbandar');
   final to = TextEditingController();
   int availableSeats = 2;
+  int completedRides = 0;
+  double commissionTotal = 0;
+  int commissionBookings = 0;
+  bool insuranceEligible = false;
+  bool loading = false;
+  String notice = '';
+  List<Map<String, dynamic>> matches = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBenefits();
+  }
+
+  Future<void> _loadBenefits() async {
+    if (!widget.configured || Supabase.instance.client.auth.currentUser == null) return;
+    try {
+      final rows = await Supabase.instance.client.rpc('get_my_driver_benefits');
+      if (!mounted || (rows as List).isEmpty) return;
+      final row = Map<String, dynamic>.from(rows.first as Map);
+      setState(() {
+        completedRides = (row['completed_rides'] as num?)?.toInt() ?? 0;
+        insuranceEligible = row['insurance_eligible'] == true;
+        commissionTotal = (row['commission_total'] as num?)?.toDouble() ?? 0;
+        commissionBookings = (row['commission_bookings'] as num?)?.toInt() ?? 0;
+      });
+    } catch (e) {
+      if (mounted) setState(() => notice = 'Benefits data is not available yet. Apply the driver-benefits SQL migration in Supabase.');
+    }
+  }
+
+  Future<void> _findMatches() async {
+    if (!widget.configured || Supabase.instance.client.auth.currentUser == null) {
+      setState(() => notice = 'Please sign in to search route matches.');
+      return;
+    }
+    if (from.text.trim().isEmpty || to.text.trim().isEmpty) {
+      setState(() => notice = 'Enter both starting point and destination.');
+      return;
+    }
+    setState(() { loading = true; notice = ''; matches = []; });
+    try {
+      final rows = await Supabase.instance.client.rpc('find_route_matches', params: {
+        'p_origin': from.text.trim(),
+        'p_destination': to.text.trim(),
+        'p_min_seats': 1,
+      });
+      if (!mounted) return;
+      setState(() => matches = List<Map<String, dynamic>>.from(rows as List));
+      if (matches.isEmpty) setState(() => notice = 'No exact-route rides with available seats were found.');
+    } catch (e) {
+      if (mounted) setState(() => notice = 'Route matching is not ready. Apply the driver-benefits SQL migration in Supabase.');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -58,12 +116,12 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                   CircleAvatar(backgroundColor: Color(0xffe8f0ff), child: Icon(Icons.shield_outlined, color: blue)),
                   SizedBox(width: 12),
                   Expanded(child: Text('Complete 1,000 rides', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
-                  Text('0 / 1,000', style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
+                  Text('$completedRides / 1,000', style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
                 ]),
                 const SizedBox(height: 16),
-                ClipRRect(borderRadius: BorderRadius.circular(20), child: const LinearProgressIndicator(value: 0, minHeight: 10, backgroundColor: Color(0xffe8edf6), color: blue)),
+                ClipRRect(borderRadius: BorderRadius.circular(20), child: LinearProgressIndicator(value: (completedRides / 1000).clamp(0.0, 1.0), minHeight: 10, backgroundColor: const Color(0xffe8edf6), color: blue)),
                 const SizedBox(height: 12),
-                const Text('Reach 1,000 eligible completed rides to qualify for the Tip Car car-insurance reward. Policy, vehicle checks and coverage terms will apply.', style: TextStyle(color: Color(0xff64718a), height: 1.45)),
+                Text(insuranceEligible ? 'Congratulations! You have reached the 1,000 completed-ride milestone. Insurance verification and policy terms still apply.' : 'Reach 1,000 eligible completed rides to qualify for the Tip Car car-insurance reward. Current progress: $completedRides rides. Policy, vehicle checks and coverage terms will apply.', style: const TextStyle(color: Color(0xff64718a), height: 1.45)),
               ]),
             ),
           ),
@@ -90,15 +148,20 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Route matching will activate when the booking backend is connected.'))),
+                    onPressed: loading ? null : _findMatches,
                     icon: const Icon(Icons.groups_2_outlined),
-                    label: const Text('Find passengers on my route'),
+                    label: Text(loading ? 'Searching…' : 'Find passengers on my route'),
                     style: FilledButton.styleFrom(backgroundColor: blue, padding: const EdgeInsets.symmetric(vertical: 15)),
                   ),
                 ),
               ]),
             ),
           ),
+          if (matches.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...matches.map((m) => Card(elevation: 0, child: ListTile(leading: const Icon(Icons.directions_car_filled_outlined), title: Text('${m['origin']} → ${m['destination']}'), subtitle: Text('${m['vehicle_name']} · ${m['available_seats']} seats available · ₹${m['fare_per_seat']} per seat'),))),
+          ],
+          if (notice.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(notice, style: const TextStyle(color: Color(0xffa45a00)))),
           const SizedBox(height: 18),
           _sectionTitle('SIMPLE COMMISSION'),
           Card(
@@ -112,13 +175,15 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('₹20 per new passenger', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                   SizedBox(height: 4),
-                  Text('Charged once for each successful new passenger booking. Cancelled bookings are not charged.', style: TextStyle(color: Color(0xff64718a), height: 1.4)),
+                  Text('Accrued once when a passenger booking is confirmed; cancelled bookings reverse the commission.', style: TextStyle(color: Color(0xff64718a), height: 1.4)),
+                  SizedBox(height: 8),
+                  Text('Current accrued: ₹$commissionTotal · $commissionBookings bookings', style: TextStyle(color: Color(0xff16834a), fontWeight: FontWeight.w700)),
                 ])),
               ]),
             ),
           ),
           const SizedBox(height: 14),
-          const Text('Preview screen: ride totals, commission collection and insurance eligibility will show verified account data after the backend rules are connected.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
+          const Text('Route matching currently checks exact starting point and destination. Insurance reward requires verification of completed rides, vehicle and policy terms.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
         ],
       ),
     );
