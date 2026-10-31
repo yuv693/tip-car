@@ -119,7 +119,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                   Text('$completedRides / 1,000', style: TextStyle(color: blue, fontWeight: FontWeight.w800)),
                 ]),
                 const SizedBox(height: 16),
-                ClipRRect(borderRadius: BorderRadius.circular(20), child: LinearProgressIndicator(value: (completedRides / 1000).clamp(0.0, 1.0), minHeight: 10, backgroundColor: const Color(0xffe8edf6), color: blue)),
+                ClipRRect(borderRadius: BorderRadius.circular(20), child: LinearProgressIndicator(value: (completedRides / 1000).clamp(0.0, 1.0).toDouble(), minHeight: 10, backgroundColor: const Color(0xffe8edf6), color: blue)),
                 const SizedBox(height: 12),
                 Text(insuranceEligible ? 'Congratulations! You have reached the 1,000 completed-ride milestone. Insurance verification and policy terms still apply.' : 'Reach 1,000 eligible completed rides to qualify for the Tip Car car-insurance reward. Current progress: $completedRides rides. Policy, vehicle checks and coverage terms will apply.', style: const TextStyle(color: Color(0xff64718a), height: 1.45)),
               ]),
