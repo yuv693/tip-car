@@ -7,7 +7,7 @@ Future<void> main() async {
   const url = String.fromEnvironment('SUPABASE_URL');
   const anon = String.fromEnvironment('SUPABASE_ANON_KEY');
   if (url.isNotEmpty && anon.isNotEmpty) {
-    await Supabase.initialize(url: url, anonKey: anon);
+    await Supabase.initialize(url: url, publishableKey: anon);
   }
   runApp(const TipCarApp(configured: url != '' && anon != ''));
 }
