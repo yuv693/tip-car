@@ -83,9 +83,9 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                 const SizedBox(height: 10),
                 Row(children: [
                   const Expanded(child: Text('Empty seats available', style: TextStyle(fontWeight: FontWeight.w600))),
-                  IconButton(onPressed: () => setState(() => availableSeats = (availableSeats - 1).clamp(1, 8)), icon: const Icon(Icons.remove_circle_outline)),
+                  IconButton(onPressed: () => setState(() => availableSeats = (availableSeats - 1).clamp(1, 8).toInt()), icon: const Icon(Icons.remove_circle_outline)),
                   Text('$availableSeats', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                  IconButton(onPressed: () => setState(() => availableSeats = (availableSeats + 1).clamp(1, 8)), icon: const Icon(Icons.add_circle_outline)),
+                  IconButton(onPressed: () => setState(() => availableSeats = (availableSeats + 1).clamp(1, 8).toInt()), icon: const Icon(Icons.add_circle_outline)),
                 ]),
                 SizedBox(
                   width: double.infinity,
