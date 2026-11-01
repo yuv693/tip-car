@@ -261,7 +261,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: 'Sign out',
                 onPressed: () async {
                   await db!.auth.signOut();
-                  if (mounted) setState(() => message = 'Signed out.');
+                  if (mounted) {
+                    setState(() {
+                      message = 'Signed out.';
+                      tab = 0;
+                    });
+                  }
                 },
                 icon: const Icon(Icons.logout),
               ),
@@ -272,131 +277,201 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(
-                    'Supabase is not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY using --dart-define, then run again.',
+                    'Tip Car setup is incomplete. Please configure the Supabase connection.',
                     textAlign: TextAlign.center,
                   ),
                 ),
               )
-            : ListView(
-                padding: const EdgeInsets.all(16),
+            : IndexedStack(
+                index: tab,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(22),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xff092b66), Color(0xff075de8)],
-                      ),
-                    ),
-                    child: const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'RIDE SHARING MADE SIMPLE',
-                          style: TextStyle(color: Colors.white70, fontSize: 11),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Every journey starts together.',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 26,
-                          ),
-                        ),
-                        Text(
-                          'Find a seat. Share a ride.',
-                          style: TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Color(0xffe8f0ff),
-                        child: Icon(
-                          Icons.emoji_events_outlined,
-                          color: Color(0xff075de8),
-                        ),
-                      ),
-                      title: const Text(
-                        'Driver Benefits',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: const Text(
-                        '₹20 per new passenger · Insurance reward at 1,000 rides',
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => DriverBenefitsScreen(
-                            configured: widget.configured,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Color(0xffe8f0ff),
-                        child: Icon(Icons.receipt_long, color: Color(0xff075de8)),
-                      ),
-                      title: const Text(
-                        'Bookings & trip history',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: const Text('Passenger requests, driver confirmations and past bookings'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: () {
-                        if (db!.auth.currentUser == null) {
-                          setState(() => message = 'Please sign in to view bookings.');
-                          return;
-                        }
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const BookingHistoryScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (db!.auth.currentSession == null) _buildAuthCard(),
-                  SegmentedButton<int>(
-                    segments: const [
-                      ButtonSegment(value: 0, label: Text('Find rides')),
-                      ButtonSegment(value: 1, label: Text('Publish ride')),
-                    ],
-                    selected: {tab},
-                    onSelectionChanged: (selection) =>
-                        setState(() => tab = selection.first),
-                  ),
-                  const SizedBox(height: 12),
-                  if (tab == 0) ..._buildRideSearch(),
-                  if (tab == 1) ..._buildPublishRide(),
-                  if (message.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        message,
-                        style: const TextStyle(color: Colors.blue),
-                      ),
-                    ),
+                  _buildHomeTab(),
+                  _buildRidesTab(),
+                  const BookingHistoryScreen(),
+                  _buildProfileTab(),
                 ],
               ),
+        bottomNavigationBar: widget.configured
+            ? NavigationBar(
+                selectedIndex: tab,
+                onDestinationSelected: (index) => setState(() {
+                  tab = index;
+                  message = '';
+                }),
+                destinations: const [
+                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+                  NavigationDestination(icon: Icon(Icons.route_outlined), selectedIcon: Icon(Icons.route), label: 'Rides'),
+                  NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'My Rides'),
+                  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+                ],
+              )
+            : null,
       );
+
+  Widget _buildHomeTab() {
+    final signedIn = db?.auth.currentUser != null;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              colors: [Color(0xff092b66), Color(0xff075de8)],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('WELCOME TO TIP CAR', style: TextStyle(color: Colors.white70, fontSize: 11)),
+              const SizedBox(height: 8),
+              Text(
+                signedIn ? 'Your journey, your way.' : 'Every journey starts together.',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 25),
+              ),
+              const SizedBox(height: 6),
+              const Text('Share the ride. Save the journey.', style: TextStyle(color: Colors.white70)),
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: () => setState(() => tab = 1),
+                icon: const Icon(Icons.search),
+                label: Text(selectedRole == 'driver' ? 'Manage my rides' : 'Find a ride'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.swap_horiz)),
+            title: const Text('Choose your travel role'),
+            subtitle: const Text('Switch between Driver and Passenger mode'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _showRolePicker,
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.receipt_long)),
+            title: const Text('My bookings & trip history'),
+            subtitle: const Text('View requests, confirmations and past trips'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => setState(() => tab = 2),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.emoji_events_outlined)),
+            title: const Text('Driver Benefits'),
+            subtitle: const Text('₹20 per new passenger · Insurance reward eligibility after 1,000 rides'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => DriverBenefitsScreen(configured: widget.configured),
+            )),
+          ),
+        ),
+        if (message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(message, style: const TextStyle(color: Colors.blue)),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _showRolePicker() async {
+    final role = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Use Tip Car as', style: TextStyle(fontWeight: FontWeight.bold))),
+            ListTile(leading: const Icon(Icons.person_outline), title: const Text('Passenger'), onTap: () => Navigator.pop(context, 'passenger')),
+            ListTile(leading: const Icon(Icons.directions_car_outlined), title: const Text('Driver'), onTap: () => Navigator.pop(context, 'driver')),
+          ],
+        ),
+      ),
+    );
+    if (role != null && mounted) {
+      setState(() {
+        selectedRole = role;
+        tab = 1;
+        message = 'Mode changed to ${role == 'driver' ? 'Driver' : 'Passenger'}. Your account permissions still follow your saved profile role.';
+      });
+    }
+  }
+
+  Widget _buildRidesTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          selectedRole == 'driver' ? 'Driver dashboard' : 'Find your next ride',
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        Text(selectedRole == 'driver'
+            ? 'Publish a journey and manage passenger requests.'
+            : 'Search available seats on journeys going your way.'),
+        const SizedBox(height: 16),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 0, label: Text('Find rides'), icon: Icon(Icons.search)),
+            ButtonSegment(value: 1, label: Text('Publish ride'), icon: Icon(Icons.add_road)),
+          ],
+          selected: {tab == 1 && selectedRole == 'driver' ? 1 : 0},
+          onSelectionChanged: (selection) => setState(() {
+            selectedRole = selection.first == 1 ? 'driver' : 'passenger';
+            message = '';
+          }),
+        ),
+        const SizedBox(height: 12),
+        if (selectedRole == 'passenger') ..._buildRideSearch(),
+        if (selectedRole == 'driver') ..._buildPublishRide(),
+        if (message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(message, style: const TextStyle(color: Colors.blue)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildProfileTab() {
+    final user = db?.auth.currentUser;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('My Profile', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.person)),
+            title: Text(user?.email ?? user?.phone ?? 'Guest account'),
+            subtitle: Text('Current mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
+          ),
+        ),
+        if (user == null) _buildAuthCard(),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.emoji_events_outlined),
+            title: const Text('Driver Benefits'),
+            subtitle: const Text('View driver rewards and eligibility details'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => DriverBenefitsScreen(configured: widget.configured),
+            )),
+          ),
+        ),
+        if (message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(message, style: const TextStyle(color: Colors.blue)),
+          ),
+      ],
+    );
+  }
 
   Widget _buildAuthCard() => Card(
         child: Padding(
