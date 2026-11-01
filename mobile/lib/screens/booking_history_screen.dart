@@ -205,6 +205,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                                     MaterialPageRoute(
                                       builder: (_) => LiveRideMapScreen(
                                         rideId: booking['ride_id'].toString(),
+                                        bookingId: booking['id'].toString(),
                                         isDriver: isDriver,
                                       ),
                                     ),
