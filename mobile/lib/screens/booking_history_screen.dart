@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'live_ride_map_screen.dart';
 
 class BookingHistoryScreen extends StatefulWidget {
   const BookingHistoryScreen({super.key});
@@ -112,6 +113,22 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               Text(DateFormat.yMMMd().add_jm().format(departure.toLocal())),
                             Text('Total: ₹${booking['total_amount']} · Payment: ${booking['payment_status']}'),
                             const SizedBox(height: 8),
+                            if (status == 'confirmed')
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => LiveRideMapScreen(
+                                        rideId: booking['ride_id'].toString(),
+                                        isDriver: isDriver,
+                                      ),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.map_outlined),
+                                  label: const Text('Live ride map'),
+                                ),
+                              ),
                             if (isDriver && status == 'pending')
                               Row(
                                 children: [
