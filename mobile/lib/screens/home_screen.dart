@@ -312,19 +312,81 @@ class _HomeScreenState extends State<HomeScreen> {
             if (method == 'upi')
               const Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text('UPI intent opens your payment app. Payment remains unverified until a gateway/merchant confirmation is connected.',
-                  style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                child: Text(
+                  'UPI intent opens your payment app. Payment remains unverified until a gateway/merchant confirmation is connected.',
+                  style: TextStyle(fontSize: 11, color: Colors.blueGrey),
+                ),
               ),
           ]),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Continue')),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Continue'),
+            ),
           ],
         ),
       ),
     );
-    if (choice != true) { vpa.dispose(); return; }
-    if (method == 'upi' && !RegExp(r'^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9.-]{2,64}
+    if (choice != true) {
+      vpa.dispose();
+      return;
+    }
+    if (method == 'upi' &&
+        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+            .hasMatch(vpa.text.trim())) {
+      vpa.dispose();
+      if (mounted) {
+        setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
+      }
+      return;
+    }
+    try {
+      final bookingId = await db!.rpc(
+        'create_booking',
+        params: {'p_ride_id': rideId, 'p_seats': 1},
+      ) as String;
+      await db!.rpc('set_my_booking_payment_method', params: {
+        'p_booking_id': bookingId,
+        'p_method': method,
+      });
+      if (method == 'upi') {
+        final ride = rides.firstWhere((item) => item['id'] == rideId);
+        final amount =
+            (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toStringAsFixed(2);
+        final uri = Uri(
+          scheme: 'upi',
+          path: 'pay',
+          queryParameters: {
+            'pa': vpa.text.trim(),
+            'pn': 'Tip Car',
+            'am': amount,
+            'cu': 'INR',
+            'tn': 'Tip Car booking $bookingId',
+          },
+        );
+        final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (mounted) {
+          setState(() => message = opened
+              ? 'UPI app opened. Booking is pending; payment is NOT verified or marked paid.'
+              : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
+        }
+      } else if (mounted) {
+        setState(() => message =
+            'Cash selected. Pay the driver directly; booking is pending confirmation.');
+      }
+      await search();
+    } catch (error) {
+      if (mounted) {
+        setState(() => message = 'Booking/payment setup failed: $error');
+      }
+    } finally {
+      vpa.dispose();
+    }
+  }
 
   @override
   void dispose() {
