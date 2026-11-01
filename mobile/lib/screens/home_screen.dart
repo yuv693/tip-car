@@ -164,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('departure_at');
       final rideRows = List<Map<String, dynamic>>.from(result);
       final driverIds = rideRows.map((ride) => ride['driver_id']?.toString()).whereType<String>().toSet().toList();
-      final publicDrivers = driverIds.isEmpty ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(await db!.from('driver_public_profiles').select('id, full_name, avatar_url').inFilter('id', driverIds));
+      final publicDrivers = driverIds.isEmpty ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(await db!.rpc('search_driver_public_profiles', params: {'p_driver_ids': driverIds}));
       final driversById = {for (final driver in publicDrivers) driver['id'].toString(): driver};
       for (final ride in rideRows) { ride['driver_public_profile'] = driversById[ride['driver_id']?.toString()] ?? <String, dynamic>{}; }
       if (mounted) { setState(() => rides = rideRows); }
