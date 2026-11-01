@@ -2,17 +2,20 @@
 
 The Android APK is configured from GitHub Actions secrets. Do not commit Supabase keys into the Flutter source code.
 
-## Add the two repository secrets
+## Required repository secrets
 
-1. Open the Tip Car repository: https://github.com/yuv693/tip-car
-2. Go to **Settings → Secrets and variables → Actions**.
-3. Under **Repository secrets**, choose **New repository secret**.
-4. Add these two secrets:
+The workflow reads the following two **Repository secrets**:
 
 | Secret name | Value |
 |---|---|
-| `SUPABASE_URL` | Your Supabase project's Project URL |
-| `SUPABASE_ANON_KEY` | Your project's publishable/anon key |
+| `VITE_SUPABASE_URL` | Your Supabase project's Project URL |
+| `VITE_SUPABASE_ANON_KEY` | Your project's publishable/anon key |
+
+To manage them:
+
+1. Open the Tip Car repository: https://github.com/yuv693/tip-car
+2. Go to **Settings → Secrets and variables → Actions**.
+3. Under **Repository secrets**, add or update the two names shown above.
 
 Find both values in the Supabase dashboard under **Project Settings → API** (the exact label may be **Publishable key** or **anon/public key**, depending on the dashboard version).
 
