@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
+const tipCarNavy = Color(0xff102a56);
+const tipCarOrange = Color(0xfff28c28);
+const tipCarGreen = Color(0xff138a50);
 
 class TipCarBrand extends StatelessWidget {
   final bool compact;
