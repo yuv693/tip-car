@@ -399,9 +399,11 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
         final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (mounted) setState(() => message = opened
-            ? 'UPI app opened for $selectedSeats seat(s), total ₹$amount. Payment is NOT verified or marked paid.'
-            : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
+        if (mounted) {
+          setState(() => message = opened
+              ? 'UPI app opened for $selectedSeats seat(s), total ₹$amount. Payment is NOT verified or marked paid.'
+              : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
+        }
       } else if (mounted) {
         setState(() => message =
             '$selectedSeats seat(s) requested. Total ₹${(farePerSeat * selectedSeats).toStringAsFixed(2)}. Pay the driver directly; booking is pending confirmation.');
