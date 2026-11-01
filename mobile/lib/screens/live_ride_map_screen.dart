@@ -75,16 +75,26 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
       await _sendPosition(current);
       await _positionSubscription?.cancel();
       _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
+        locationSettings: AndroidSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: 20,
+          intervalDuration: const Duration(seconds: 10),
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationTitle: 'Tip Car live ride',
+            notificationText: 'Your live location is being shared with confirmed ride passengers.',
+            notificationChannelName: 'Tip Car location sharing',
+            enableWakeLock: true,
+            setOngoing: true,
+          ),
         ),
       ).listen((position) {
-        _sendPosition(position);
+        _sendPosition(position).catchError((Object error) {
+          if (mounted) setState(() => _message = 'Could not upload location: $error');
+        });
       }, onError: (Object error) {
         if (mounted) setState(() => _message = 'Location updates stopped: $error');
       });
-      if (mounted) setState(() { _sharing = true; _message = 'Live location sharing is on.'; });
+      if (mounted) setState(() { _sharing = true; _message = 'Live location sharing is on. You can minimize Tip Car; the Android notification will stay visible.'; });
     } catch (error) {
       if (mounted) setState(() => _message = error.toString().replaceFirst('Exception: ', ''));
     } finally {
