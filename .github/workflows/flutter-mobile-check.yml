@@ -33,6 +33,20 @@ jobs:
       - name: Build debug APK
         working-directory: mobile
         run: flutter build apk --debug
+      - name: Package Android project
+        run: |
+          zip -r tip-car-android-project.zip mobile \
+            -x 'mobile/.dart_tool/*' \
+               'mobile/build/*' \
+               'mobile/android/local.properties' \
+               'mobile/android/.gradle/*' \
+               'mobile/android/app/build/*'
+      - name: Upload Android project
+        uses: actions/upload-artifact@v4
+        with:
+          name: tip-car-android-project
+          path: tip-car-android-project.zip
+          if-no-files-found: error
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
