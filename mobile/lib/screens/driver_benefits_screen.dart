@@ -175,13 +175,21 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('₹20 per new passenger', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
                   SizedBox(height: 4),
-                  Text('Accrued once when a passenger booking is confirmed; cancelled bookings reverse the commission.', style: TextStyle(color: Color(0xff64718a), height: 1.4)),
+                  Text('₹20 becomes due only after the driver marks a confirmed passenger booking as completed. Cancelled bookings do not incur commission.', style: TextStyle(color: Color(0xff64718a), height: 1.4)),
                   SizedBox(height: 8),
-                  Text('Current accrued: ₹$commissionTotal · $commissionBookings bookings', style: TextStyle(color: Color(0xff16834a), fontWeight: FontWeight.w700)),
+                  Text('Commission due: ₹$commissionTotal · $commissionBookings completed bookings', style: TextStyle(color: Color(0xff16834a), fontWeight: FontWeight.w700)),
                 ])),
               ]),
             ),
           ),
+          if (commissionTotal > 0)
+            Card(
+              color: const Color(0xfffff4e5),
+              child: const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Your driver account is locked for new customer bookings while commission is due. Pay Tip Car using the official payment instructions and contact an admin for verification. Your account unlocks only after the admin marks the payment verified. Do not treat a UPI screenshot or app-opening as payment confirmation.', style: TextStyle(color: Color(0xff8a4b08), height: 1.45, fontWeight: FontWeight.w600)),
+              ),
+            ),
           const SizedBox(height: 14),
           const Text('Route matching currently checks exact starting point and destination. Insurance reward requires verification of completed rides, vehicle and policy terms.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
         ],
