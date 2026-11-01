@@ -7,6 +7,14 @@ on:
       - 'mobile/**'
       - 'supabase/**'
       - '.github/workflows/flutter-mobile-check.yml'
+      - 'docs/android-build-setup.md'
+  push:
+    branches: [tipcarbus-starter]
+    paths:
+      - 'mobile/**'
+      - 'supabase/**'
+      - '.github/workflows/flutter-mobile-check.yml'
+      - 'docs/android-build-setup.md'
   workflow_dispatch:
 
 jobs:
@@ -18,6 +26,14 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: Verify production Supabase configuration
+        if: github.event_name != 'pull_request'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$SUPABASE_URL" || (echo "Missing GitHub Actions secret: SUPABASE_URL" && exit 1)
+          test -n "$SUPABASE_ANON_KEY" || (echo "Missing GitHub Actions secret: SUPABASE_ANON_KEY" && exit 1)
       - name: Generate Android platform scaffolding
         working-directory: mobile
         run: flutter create --platforms=android --project-name tip_car .
@@ -32,7 +48,13 @@ jobs:
         run: flutter test
       - name: Build debug APK
         working-directory: mobile
-        run: flutter build apk --debug
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
       - name: Package Android project
         run: |
           zip -r tip-car-android-project.zip mobile \
