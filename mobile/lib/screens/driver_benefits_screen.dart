@@ -58,7 +58,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
       final rows = await Supabase.instance.client.rpc('find_route_matches', params: {
         'p_origin': from.text.trim(),
         'p_destination': to.text.trim(),
-        'p_min_seats': 1,
+        'p_min_seats': availableSeats,
       });
       if (!mounted) return;
       setState(() => matches = List<Map<String, dynamic>>.from(rows as List));
@@ -126,21 +126,21 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _sectionTitle('ROUTE SEAT MATCH'),
+          _sectionTitle('ROUTE RIDE MATCH'),
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
             child: Padding(
               padding: const EdgeInsets.all(18),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Going somewhere? Find passengers travelling your way.', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                const Text('Search active rides on your exact route and require enough seats for your passengers.', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                 const SizedBox(height: 14),
                 TextField(controller: from, decoration: const InputDecoration(labelText: 'Starting point', prefixIcon: Icon(Icons.trip_origin), filled: true)),
                 const SizedBox(height: 10),
                 TextField(controller: to, decoration: const InputDecoration(labelText: 'Destination', prefixIcon: Icon(Icons.location_on_outlined), filled: true)),
                 const SizedBox(height: 10),
                 Row(children: [
-                  const Expanded(child: Text('Empty seats available', style: TextStyle(fontWeight: FontWeight.w600))),
+                  const Expanded(child: Text('Minimum seats needed', style: TextStyle(fontWeight: FontWeight.w600))),
                   IconButton(onPressed: () => setState(() => availableSeats = (availableSeats - 1).clamp(1, 8).toInt()), icon: const Icon(Icons.remove_circle_outline)),
                   Text('$availableSeats', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
                   IconButton(onPressed: () => setState(() => availableSeats = (availableSeats + 1).clamp(1, 8).toInt()), icon: const Icon(Icons.add_circle_outline)),
@@ -150,7 +150,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                   child: FilledButton.icon(
                     onPressed: loading ? null : _findMatches,
                     icon: const Icon(Icons.groups_2_outlined),
-                    label: Text(loading ? 'Searching…' : 'Find passengers on my route'),
+                    label: Text(loading ? 'Searching…' : 'Find matching rides'),
                     style: FilledButton.styleFrom(backgroundColor: blue, padding: const EdgeInsets.symmetric(vertical: 15)),
                   ),
                 ),
