@@ -148,7 +148,9 @@ class _HomeScreenState extends State<HomeScreen> {
         type: OtpType.sms,
       );
       final user = db!.auth.currentUser;
-      if (user != null) await _ensureProfile(user);
+      if (user != null) {
+        await _ensureProfile(user);
+      }
       await _loadAvatar();
       if (mounted) setState(() => message = 'Signed in with phone.');
     } catch (error) {
@@ -293,19 +295,22 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
           title: const Text('Choose payment method'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            RadioListTile<String>(
-              value: 'cash',
-              groupValue: method,
-              onChanged: (value) => setDialogState(() => method = value!),
-              title: const Text('Cash to driver'),
-            ),
-            RadioListTile<String>(
-              value: 'upi',
-              groupValue: method,
-              onChanged: (value) => setDialogState(() => method = value!),
-              title: const Text('UPI app'),
-            ),
+          content: RadioGroup<String>(
+            groupValue: method,
+            onChanged: (value) {
+              if (value != null) {
+                setDialogState(() => method = value);
+              }
+            },
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const RadioListTile<String>(
+                value: 'cash',
+                title: Text('Cash to driver'),
+              ),
+              const RadioListTile<String>(
+                value: 'upi',
+                title: Text('UPI app'),
+              ),
             if (method == 'upi')
               TextField(
                 controller: vpa,
@@ -323,7 +328,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(fontSize: 11, color: Colors.blueGrey),
                 ),
               ),
-          ]),
+            ]),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),
