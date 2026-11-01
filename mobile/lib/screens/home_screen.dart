@@ -87,10 +87,12 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       final url = '${db!.storage.from('driver-avatars').getPublicUrl(path)}?v=${DateTime.now().millisecondsSinceEpoch}';
       await db!.from('profiles').update({'avatar_url': url}).eq('id', user.id);
-      if (mounted) setState(() {
-        avatarUrl = url;
-        message = 'Profile photo uploaded successfully.';
-      });
+      if (mounted) {
+        setState(() {
+          avatarUrl = url;
+          message = 'Profile photo uploaded successfully.';
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => message = 'Photo upload failed: $error');
     } finally {
