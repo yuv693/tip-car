@@ -162,9 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
           .ilike('destination', '%${to.text.trim()}%')
           .gte('departure_at', DateTime.now().toUtc().toIso8601String())
           .order('departure_at');
-      if (mounted) {
-        setState(() => rides = List<Map<String, dynamic>>.from(result));
-      }
+      final rideRows = List<Map<String, dynamic>>.from(result);
+      final driverIds = rideRows.map((ride) => ride['driver_id']?.toString()).whereType<String>().toSet().toList();
+      final publicDrivers = driverIds.isEmpty ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(await db!.from('driver_public_profiles').select('id, full_name, avatar_url').inFilter('id', driverIds));
+      final driversById = {for (final driver in publicDrivers) driver['id'].toString(): driver};
+      for (final ride in rideRows) { ride['driver_public_profile'] = driversById[ride['driver_id']?.toString()] ?? <String, dynamic>{}; }
+      if (mounted) { setState(() => rides = rideRows); }
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
     } finally {
@@ -721,28 +724,21 @@ class _HomeScreenState extends State<HomeScreen> {
           child: const Text('Search rides'),
         ),
         if (loading) const Center(child: CircularProgressIndicator()),
-        ...rides.map(
-          (ride) => Card(
-            child: ListTile(
-              leading: const Icon(Icons.directions_car),
-              title: Text('${ride['origin']} → ${ride['destination']}'),
-              subtitle: Text(
-                '${ride['vehicle_name']} · ${ride['available_seats']} seats · '
-                '${DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())}',
-              ),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('₹${ride['fare_per_seat']}'),
-                  TextButton(
-                    onPressed: () => book(ride['id'] as String),
-                    child: const Text('Book'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        ...rides.map((ride) {
+          final driver = ride['driver_public_profile'] is Map ? Map<String, dynamic>.from(ride['driver_public_profile'] as Map) : <String, dynamic>{};
+          final photoUrl = driver['avatar_url']?.toString() ?? '';
+          final driverName = driver['full_name']?.toString().trim();
+          return Card(margin: const EdgeInsets.only(top: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${ride['origin']} → ${ride['destination']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 7),
+            Text('${ride['vehicle_name']} · ${ride['vehicle_number']} · ${ride['available_seats']} seats'),
+            Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
+            const Divider(height: 20),
+            Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff246bfe)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
+            const SizedBox(height: 8),
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: () => book(ride['id'] as String), child: const Text('Request booking'))),
+          ])));
+        })
       ];
 
   List<Widget> _buildPublishRide() => [
