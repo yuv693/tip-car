@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'driver_benefits_screen.dart';
+import 'booking_history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool configured;
@@ -339,6 +340,36 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: ListTile(
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xffe8f0ff),
+                        child: Icon(Icons.receipt_long, color: Color(0xff075de8)),
+                      ),
+                      title: const Text(
+                        'Bookings & trip history',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text('Passenger requests, driver confirmations and past bookings'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        if (db!.auth.currentUser == null) {
+                          setState(() => message = 'Please sign in to view bookings.');
+                          return;
+                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const BookingHistoryScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 16),
