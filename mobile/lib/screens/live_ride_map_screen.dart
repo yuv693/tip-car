@@ -23,6 +23,7 @@ class LiveRideMapScreen extends StatefulWidget {
 class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   final MapController _mapController = MapController();
   StreamSubscription<Position>? _positionSubscription;
+  StreamSubscription<List<Map<String, dynamic>>>? _locationSubscription;
   LatLng? _driverPosition;
   bool _sharing = false;
   bool _busy = false;
@@ -37,7 +38,7 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   }
 
   void _watchRideLocation() {
-    _db
+    _locationSubscription = _db
         .from('ride_locations')
         .stream(primaryKey: ['ride_id'])
         .eq('ride_id', widget.rideId)
@@ -112,6 +113,7 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   @override
   void dispose() {
     _positionSubscription?.cancel();
+    _locationSubscription?.cancel();
     super.dispose();
   }
 
