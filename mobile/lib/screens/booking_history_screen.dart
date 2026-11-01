@@ -63,8 +63,11 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   Widget build(BuildContext context) {
     final userId = db.auth.currentUser?.id;
     return Scaffold(
+      backgroundColor: const Color(0xfff4f7fc),
       appBar: AppBar(
-        title: const Text('Bookings & trip history'),
+        backgroundColor: const Color(0xfff4f7fc),
+        elevation: 0,
+        title: const Text('My journeys', style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xff10234f))),
         actions: [
           IconButton(onPressed: loading ? null : _load, icon: const Icon(Icons.refresh)),
         ],
@@ -76,6 +79,40 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 18),
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xff10234f), Color(0xff246bfe)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Your trips, all in one place',
+                                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                              SizedBox(height: 6),
+                              Text('Track bookings, confirm requests and follow your ride.',
+                                style: TextStyle(color: Colors.white70, height: 1.35)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        CircleAvatar(
+                          radius: 27,
+                          backgroundColor: Colors.white.withValues(alpha: 0.16),
+                          child: const Icon(Icons.route_rounded, color: Colors.white, size: 28),
+                        ),
+                      ],
+                    ),
+                  ),
                   if (notice.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -95,16 +132,27 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                     final departure = DateTime.tryParse(ride['departure_at']?.toString() ?? '');
                     final route = '${ride['origin'] ?? 'Route'} → ${ride['destination'] ?? ''}';
                     return Card(
+                      elevation: 0,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: const BorderSide(color: Color(0xffe8edf5)),
+                      ),
                       margin: const EdgeInsets.only(bottom: 12),
                       child: Padding(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
                                 Expanded(child: Text(route, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                                Chip(label: Text(status.toUpperCase())),
+                                Chip(
+                                  label: Text(status.toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800)),
+                                  backgroundColor: status == 'confirmed' ? const Color(0xffe8f8ef) : const Color(0xffeef3ff),
+                                  side: BorderSide.none,
+                                  visualDensity: VisualDensity.compact,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 6),
