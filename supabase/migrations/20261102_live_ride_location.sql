@@ -53,4 +53,14 @@ $$;
 revoke all on function public.update_my_ride_location(uuid,double precision,double precision) from public, anon;
 grant execute on function public.update_my_ride_location(uuid,double precision,double precision) to authenticated;
 
-alter publication supabase_realtime add table public.ride_locations;
+do $
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'ride_locations'
+  ) then
+    alter publication supabase_realtime add table public.ride_locations;
+  end if;
+end $;
