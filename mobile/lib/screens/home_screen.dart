@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/tip_car_brand.dart';
@@ -34,11 +38,67 @@ class _HomeScreenState extends State<HomeScreen> {
   String message = '';
   String selectedRole = 'passenger';
   bool loading = false;
+  bool photoUploading = false;
+  String? avatarUrl;
   int tab = 0;
   int authMethod = 0;
 
   SupabaseClient? get db =>
       widget.configured ? Supabase.instance.client : null;
+
+
+  Future<void> _loadAvatar() async {
+    if (!widget.configured || db!.auth.currentUser == null) return;
+    try {
+      final row = await db!.from('profiles').select('avatar_url')
+          .eq('id', db!.auth.currentUser!.id).maybeSingle();
+      if (mounted) setState(() => avatarUrl = row?['avatar_url']?.toString());
+    } catch (_) {
+      // Profile image is optional; do not block the rest of the app.
+    }
+  }
+
+  Future<void> _uploadDriverPhoto() async {
+    final user = db?.auth.currentUser;
+    if (user == null) {
+      setState(() => message = 'Please sign in before uploading your driver photo.');
+      return;
+    }
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 82,
+        maxWidth: 1200,
+      );
+      if (picked == null) return;
+      setState(() { photoUploading = true; message = ''; });
+      final extension = picked.path.split('.').last.toLowerCase();
+      final safeExtension = ['jpg', 'jpeg', 'png', 'webp'].contains(extension) ? extension : 'jpg';
+      final contentType = safeExtension == 'png' ? 'image/png' : (safeExtension == 'webp' ? 'image/webp' : 'image/jpeg');
+      final path = '${user.id}/avatar.$safeExtension';
+      await db!.storage.from('driver-avatars').upload(
+        path,
+        File(picked.path),
+        fileOptions: FileOptions(
+          upsert: true,
+          contentType: contentType,
+          cacheControl: '3600',
+        ),
+      );
+      final url = '${db!.storage.from('driver-avatars').getPublicUrl(path)}?v=${DateTime.now().millisecondsSinceEpoch}';
+      await db!.from('profiles').update({'avatar_url': url}).eq('id', user.id);
+      if (mounted) {
+        setState(() {
+          avatarUrl = url;
+          message = 'Profile photo uploaded successfully.';
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => message = 'Photo upload failed: $error');
+    } finally {
+      if (mounted) setState(() => photoUploading = false);
+    }
+  }
 
   Future<void> _ensureProfile(dynamic user) async {
     final metadata = user.userMetadata as Map<String, dynamic>? ?? {};
@@ -90,7 +150,10 @@ class _HomeScreenState extends State<HomeScreen> {
         type: OtpType.sms,
       );
       final user = db!.auth.currentUser;
-      if (user != null) await _ensureProfile(user);
+      if (user != null) {
+        await _ensureProfile(user);
+      }
+      await _loadAvatar();
       if (mounted) setState(() => message = 'Signed in with phone.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
@@ -109,6 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       final user = db!.auth.currentUser;
       if (user != null) await _ensureProfile(user);
+      await _loadAvatar();
       if (mounted) setState(() => message = 'Signed in with email.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
@@ -134,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (response.user != null && response.session != null) {
         await _ensureProfile(response.user);
+        await _loadAvatar();
       }
       if (!mounted) return;
       setState(() => message = response.session == null
@@ -225,18 +290,115 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> book(String rideId) async {
+    final vpa = TextEditingController();
+    String method = 'cash';
+    final choice = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Choose payment method'),
+          content: RadioGroup<String>(
+            groupValue: method,
+            onChanged: (value) {
+              if (value != null) {
+                setDialogState(() => method = value);
+              }
+            },
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const RadioListTile<String>(
+                value: 'cash',
+                title: Text('Cash to driver'),
+              ),
+              const RadioListTile<String>(
+                value: 'upi',
+                title: Text('UPI app'),
+              ),
+            if (method == 'upi')
+              TextField(
+                controller: vpa,
+                decoration: const InputDecoration(
+                  labelText: 'Tip Car UPI ID (VPA)',
+                  hintText: 'yourname@bank',
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            if (method == 'upi')
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'UPI intent opens your payment app. Payment remains unverified until a gateway/merchant confirmation is connected.',
+                  style: TextStyle(fontSize: 11, color: Colors.blueGrey),
+                ),
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice != true) {
+      vpa.dispose();
+      return;
+    }
+    if (method == 'upi' &&
+        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+            .hasMatch(vpa.text.trim())) {
+      vpa.dispose();
+      if (mounted) {
+        setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
+      }
+      return;
+    }
     try {
-      await db!.rpc(
+      final bookingId = await db!.rpc(
         'create_booking',
         params: {'p_ride_id': rideId, 'p_seats': 1},
-      );
-      if (mounted) {
+      ) as String;
+      await db!.rpc('set_my_booking_payment_method', params: {
+        'p_booking_id': bookingId,
+        'p_method': method,
+      });
+      if (method == 'upi') {
+        final ride = rides.firstWhere((item) => item['id'] == rideId);
+        final amount =
+            (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toStringAsFixed(2);
+        final uri = Uri(
+          scheme: 'upi',
+          path: 'pay',
+          queryParameters: {
+            'pa': vpa.text.trim(),
+            'pn': 'Tip Car',
+            'am': amount,
+            'cu': 'INR',
+            'tn': 'Tip Car booking $bookingId',
+          },
+        );
+        final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (mounted) {
+          setState(() => message = opened
+              ? 'UPI app opened. Booking is pending; payment is NOT verified or marked paid.'
+              : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
+        }
+      } else if (mounted) {
         setState(() => message =
-            'Booking request created. Payment has not been collected.');
+            'Cash selected. Pay the driver directly; booking is pending confirmation.');
       }
       await search();
     } catch (error) {
-      if (mounted) setState(() => message = error.toString());
+      if (mounted) {
+        setState(() => message = 'Booking/payment setup failed: $error');
+      }
+    } finally {
+      vpa.dispose();
     }
   }
 
@@ -567,13 +729,20 @@ class _HomeScreenState extends State<HomeScreen> {
             CircleAvatar(
               radius: 29,
               backgroundColor: Colors.white.withValues(alpha: .16),
-              child: const Icon(Icons.person_rounded, color: Colors.white, size: 30),
+              backgroundImage: (avatarUrl?.isNotEmpty ?? false) ? NetworkImage(avatarUrl!) : null,
+              child: (avatarUrl?.isNotEmpty ?? false) ? null : const Icon(Icons.person_rounded, color: Colors.white, size: 30),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Your Tip Car account', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 5),
               Text(accountLabel, style: const TextStyle(color: Colors.white70), overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 7),
+              InkWell(onTap: photoUploading ? null : _uploadDriverPhoto, child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(photoUploading ? Icons.hourglass_top : Icons.add_a_photo_outlined, color: Colors.white, size: 15),
+                const SizedBox(width: 6),
+                Text(photoUploading ? 'Uploading photo...' : 'Add / change profile photo', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              ])),
             ])),
           ]),
         ),
