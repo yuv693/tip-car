@@ -43,6 +43,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     try {
       if (action == 'cancel') {
         await db.rpc('cancel_my_booking', params: {'p_booking_id': booking['id']});
+      } else if (action == 'complete') {
+        await db.rpc('driver_complete_booking', params: {'p_booking_id': booking['id']});
       } else {
         await db.rpc('driver_respond_booking', params: {
           'p_booking_id': booking['id'],
@@ -51,8 +53,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
       }
       if (!mounted) return;
       setState(() => notice = action == 'confirmed'
-          ? 'Booking confirmed. Driver commission is recorded by the database.'
-          : 'Booking updated.');
+          ? 'Booking confirmed.'
+          : action == 'complete'
+              ? 'Ride marked completed. ₹20 Tip Car commission is now due.'
+              : 'Booking updated.');
       await _load();
     } catch (error) {
       if (mounted) setState(() => notice = 'Action failed: $error');
@@ -209,6 +213,15 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                                   label: const Text('Live ride map'),
                                 ),
                               ),
+                            if (isDriver && status == 'confirmed')
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _act(booking, 'complete'),
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  label: const Text('Mark ride completed'),
+                                ),
+                              ),
                             if (isDriver && status == 'pending')
                               Row(
                                 children: [
@@ -239,7 +252,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Text(
-                      'Booking confirmation does not collect payment. Cash/UPI settlement and payment gateway processing are not enabled yet.',
+                      'Cash/UPI fare collection is not verified in Tip Car yet. Driver commission is ₹20 per completed passenger booking; outstanding commission blocks new bookings until an admin verifies payment.',
                       style: TextStyle(fontSize: 12, color: Color(0xff718096)),
                     ),
                   ),
