@@ -289,58 +289,77 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> book(String rideId) async {
+  Future<void> book(Map<String, dynamic> ride) async {
+    final rideId = ride['id'] as String;
+    final availableSeats = (ride['available_seats'] as num?)?.toInt() ?? 0;
+    if (availableSeats < 1) {
+      setState(() => message = 'Sorry, all seats on this ride are booked.');
+      return;
+    }
     final vpa = TextEditingController();
+    int selectedSeats = 1;
     String method = 'cash';
+    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();
     final choice = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Choose payment method'),
-          content: RadioGroup<String>(
-            groupValue: method,
-            onChanged: (value) {
-              if (value != null) {
-                setDialogState(() => method = value);
-              }
-            },
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const RadioListTile<String>(
-                value: 'cash',
-                title: Text('Cash to driver'),
-              ),
-              const RadioListTile<String>(
-                value: 'upi',
-                title: Text('UPI app'),
-              ),
-            if (method == 'upi')
-              TextField(
-                controller: vpa,
-                decoration: const InputDecoration(
-                  labelText: 'Tip Car UPI ID (VPA)',
-                  hintText: 'yourname@bank',
+          title: const Text('Book your seats'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$availableSeats seat(s) available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green)),
+                const SizedBox(height: 10),
+                const Text('How many seats do you need?'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      onPressed: selectedSeats > 1 ? () => setDialogState(() => selectedSeats--) : null,
+                      icon: const Icon(Icons.remove_circle_outline),
+                    ),
+                    Text('$selectedSeats', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+                    IconButton(
+                      onPressed: selectedSeats < availableSeats ? () => setDialogState(() => selectedSeats++) : null,
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                  ],
                 ),
-                keyboardType: TextInputType.emailAddress,
-              ),
-            if (method == 'upi')
-              const Padding(
-                padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'UPI intent opens your payment app. Payment remains unverified until a gateway/merchant confirmation is connected.',
-                  style: TextStyle(fontSize: 11, color: Colors.blueGrey),
+                Text('Total fare: ₹${(farePerSeat * selectedSeats).toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.w800)),
+                const Divider(height: 22),
+                RadioGroup<String>(
+                  groupValue: method,
+                  onChanged: (value) {
+                    if (value != null) setDialogState(() => method = value);
+                  },
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    const RadioListTile<String>(value: 'cash', title: Text('Cash to driver'), contentPadding: EdgeInsets.zero),
+                    const RadioListTile<String>(value: 'upi', title: Text('UPI app'), contentPadding: EdgeInsets.zero),
+                  ]),
                 ),
-              ),
-            ]),
+                if (method == 'upi') ...[
+                  TextField(
+                    controller: vpa,
+                    decoration: const InputDecoration(labelText: 'Tip Car UPI ID (VPA)', hintText: 'yourname@bank'),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'UPI intent opens your payment app. Payment remains unverified until a gateway/merchant confirmation is connected.',
+                      style: TextStyle(fontSize: 11, color: Colors.blueGrey),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Continue'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Continue')),
           ],
         ),
       ),
@@ -350,27 +369,24 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (method == 'upi' &&
-        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
-            .hasMatch(vpa.text.trim())) {
+        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$').hasMatch(vpa.text.trim())) {
       vpa.dispose();
-      if (mounted) {
-        setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
-      }
+      if (mounted) setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
       return;
     }
     try {
+      // The database RPC locks the ride row and rechecks remaining seats,
+      // so two passengers cannot reserve the same final seat simultaneously.
       final bookingId = await db!.rpc(
         'create_booking',
-        params: {'p_ride_id': rideId, 'p_seats': 1},
+        params: {'p_ride_id': rideId, 'p_seats': selectedSeats},
       ) as String;
       await db!.rpc('set_my_booking_payment_method', params: {
         'p_booking_id': bookingId,
         'p_method': method,
       });
       if (method == 'upi') {
-        final ride = rides.firstWhere((item) => item['id'] == rideId);
-        final amount =
-            (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toStringAsFixed(2);
+        final amount = (farePerSeat * selectedSeats).toStringAsFixed(2);
         final uri = Uri(
           scheme: 'upi',
           path: 'pay',
@@ -383,20 +399,17 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
         final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (mounted) {
-          setState(() => message = opened
-              ? 'UPI app opened. Booking is pending; payment is NOT verified or marked paid.'
-              : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
-        }
+        if (mounted) setState(() => message = opened
+            ? 'UPI app opened for $selectedSeats seat(s), total ₹$amount. Payment is NOT verified or marked paid.'
+            : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
       } else if (mounted) {
         setState(() => message =
-            'Cash selected. Pay the driver directly; booking is pending confirmation.');
+            '$selectedSeats seat(s) requested. Total ₹${(farePerSeat * selectedSeats).toStringAsFixed(2)}. Pay the driver directly; booking is pending confirmation.');
       }
       await search();
     } catch (error) {
-      if (mounted) {
-        setState(() => message = 'Booking/payment setup failed: $error');
-      }
+      if (mounted) setState(() => message = 'Booking failed: $error. Please refresh seats and try again.');
+      await search();
     } finally {
       vpa.dispose();
     }
@@ -900,12 +913,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return Card(margin: const EdgeInsets.only(top: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${ride['origin']} → ${ride['destination']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 7),
-            Text('${ride['vehicle_name']} · ${ride['vehicle_number']} · ${ride['available_seats']} seats'),
+            Text('${ride['vehicle_name']} · ${ride['vehicle_number']}'),
+            Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
             Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
             const Divider(height: 20),
             Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff246bfe)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
             const SizedBox(height: 8),
-            SizedBox(width: double.infinity, child: FilledButton(onPressed: () => book(ride['id'] as String), child: const Text('Request booking'))),
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: ((ride['available_seats'] as num?)?.toInt() ?? 0) > 0 ? () => book(ride) : null, child: Text(((ride['available_seats'] as num?)?.toInt() ?? 0) > 0 ? 'Select seats & book' : 'Sold out'))),
           ])));
         })
       ];
