@@ -369,7 +369,616 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (method == 'upi' &&
-        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$').hasMatch(vpa.text.trim())) {
+        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}.hasMatch(vpa.text.trim())) {
+      vpa.dispose();
+      if (mounted) setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
+      return;
+    }
+    try {
+      // The database RPC locks the ride row and rechecks remaining seats,
+      // so two passengers cannot reserve the same final seat simultaneously.
+      final bookingId = await db!.rpc(
+        'create_booking',
+        params: {'p_ride_id': rideId, 'p_seats': selectedSeats},
+      ) as String;
+      await db!.rpc('set_my_booking_payment_method', params: {
+        'p_booking_id': bookingId,
+        'p_method': method,
+      });
+      if (method == 'upi') {
+        final amount = (farePerSeat * selectedSeats).toStringAsFixed(2);
+        final uri = Uri(
+          scheme: 'upi',
+          path: 'pay',
+          queryParameters: {
+            'pa': vpa.text.trim(),
+            'pn': 'Tip Car',
+            'am': amount,
+            'cu': 'INR',
+            'tn': 'Tip Car booking $bookingId',
+          },
+        );
+        final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (mounted) {
+          setState(() => message = opened
+              ? 'UPI app opened for $selectedSeats seat(s), total ₹$amount. Payment is NOT verified or marked paid.'
+              : 'Booking saved, but no UPI app could open. Payment is still unpaid.');
+        }
+      } else if (mounted) {
+        setState(() => message =
+            '$selectedSeats seat(s) requested. Total ₹${(farePerSeat * selectedSeats).toStringAsFixed(2)}. Pay the driver directly; booking is pending confirmation.');
+      }
+      await search();
+    } catch (error) {
+      if (mounted) setState(() => message = 'Booking failed: $error. Please refresh seats and try again.');
+      await search();
+    } finally {
+      vpa.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    from.dispose();
+    to.dispose();
+    phone.dispose();
+    otp.dispose();
+    name.dispose();
+    email.dispose();
+    password.dispose();
+    vehicle.dispose();
+    number.dispose();
+    fare.dispose();
+    seats.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: const TipCarBrand(compact: true),
+          actions: [
+            if (db?.auth.currentUser != null)
+              IconButton(
+                tooltip: 'Sign out',
+                onPressed: () async {
+                  await db!.auth.signOut();
+                  if (mounted) {
+                    setState(() {
+                      message = 'Signed out.';
+                      tab = 0;
+                    });
+                  }
+                },
+                icon: const Icon(Icons.logout),
+              ),
+          ],
+        ),
+        body: !widget.configured
+            ? const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Tip Car setup is incomplete. Please configure the Supabase connection.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              )
+            : IndexedStack(
+                index: tab,
+                children: [
+                  _buildHomeTab(),
+                  _buildRidesTab(),
+                  const BookingHistoryScreen(),
+                  _buildProfileTab(),
+                ],
+              ),
+        bottomNavigationBar: widget.configured
+            ? NavigationBar(
+                selectedIndex: tab,
+                onDestinationSelected: (index) => setState(() {
+                  tab = index;
+                  message = '';
+                }),
+                destinations: const [
+                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+                  NavigationDestination(icon: Icon(Icons.route_outlined), selectedIcon: Icon(Icons.route), label: 'Rides'),
+                  NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'My Rides'),
+                  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+                ],
+              )
+            : null,
+      );
+
+  Widget _buildHomeTab() {
+    final signedIn = db?.auth.currentUser != null;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xff102a56), Color(0xff174d91), Color(0xff087b78)],
+            ),
+            boxShadow: const [BoxShadow(color: Color(0x24102a56), blurRadius: 22, offset: Offset(0, 10))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(15)),
+                  child: const Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 25),
+                ),
+                const SizedBox(width: 10),
+                const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('TIP CAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 2, fontSize: 16)),
+                  Text('SHARE THE RIDE. SAVE THE JOURNEY.', style: TextStyle(color: Colors.white70, fontSize: 9, letterSpacing: .7)),
+                ]),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: .13), borderRadius: BorderRadius.circular(30)),
+                  child: const Row(children: [Icon(Icons.verified_user_outlined, color: Colors.white, size: 14), SizedBox(width: 5), Text('Travel together', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600))]),
+                ),
+              ]),
+              const SizedBox(height: 25),
+              Text(signedIn ? 'Ready for your\nnext journey?' : 'Your journey,\nmade easier.', style: const TextStyle(color: Colors.white, fontSize: 30, height: 1.08, fontWeight: FontWeight.w800, letterSpacing: -.6)),
+              const SizedBox(height: 9),
+              const Text('Find a seat. Share your route. Go further together.', style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const SizedBox(height: 20),
+              Row(children: [
+                _heroPill(Icons.people_alt_outlined, 'Shared rides'),
+                const SizedBox(width: 8),
+                _heroPill(Icons.savings_outlined, 'Save money'),
+                const SizedBox(width: 8),
+                _heroPill(Icons.route_rounded, 'Your route'),
+              ]),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(children: [
+          const Expanded(child: Text('Where are you going?', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xff102a56)))),
+          TextButton.icon(onPressed: _showRolePicker, icon: const Icon(Icons.swap_horiz, size: 17), label: Text(selectedRole == 'driver' ? 'Driver' : 'Passenger')),
+        ]),
+        Card(
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: Color(0xffe8edf4))),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(children: [
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Column(children: [
+                  const SizedBox(height: 15, child: Icon(Icons.radio_button_checked, color: Color(0xff138a50), size: 17)),
+                  Container(width: 2, height: 38, color: const Color(0xffd5deea)),
+                  const SizedBox(height: 15, child: Icon(Icons.location_on, color: Color(0xfff28c28), size: 19)),
+                ]),
+                const SizedBox(width: 12),
+                Expanded(child: Column(children: [
+                  TextField(controller: from, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: 'Pickup location', hintText: 'Where from?', isDense: true, border: InputBorder.none)),
+                  const Divider(height: 1),
+                  TextField(controller: to, textInputAction: TextInputAction.search, onSubmitted: (_) => search(), decoration: const InputDecoration(labelText: 'Destination', hintText: 'Where to?', isDense: true, border: InputBorder.none)),
+                ])),
+              ]),
+              const SizedBox(height: 14),
+              SizedBox(width: double.infinity, height: 52, child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: const Color(0xfff28c28), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                onPressed: () { setState(() { selectedRole = 'passenger'; tab = 1; }); search(); },
+                icon: const Icon(Icons.search_rounded), label: const Text('SEARCH RIDES', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: .7)),
+              )),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 22),
+        const Text('Explore Tip Car', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xff102a56))),
+        const SizedBox(height: 11),
+        Row(children: [
+          Expanded(child: _featureTile(Icons.search_rounded, 'Find a ride', 'Travel your way', const Color(0xffeaf2ff), const Color(0xff174d91), () { setState(() { selectedRole = 'passenger'; tab = 1; }); })),
+          const SizedBox(width: 10),
+          Expanded(child: _featureTile(Icons.add_road_rounded, 'Offer a ride', 'Share empty seats', const Color(0xfffff1e5), const Color(0xffd97706), () { setState(() { selectedRole = 'driver'; tab = 1; }); })),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: _featureTile(Icons.receipt_long_rounded, 'My bookings', 'Your trip activity', const Color(0xffe8f7f0), const Color(0xff138a50), () => setState(() => tab = 2))),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _featureTile(
+              Icons.emoji_events_rounded,
+              'Driver benefits',
+              'Rewards & progress',
+              const Color(0xfff2edff),
+              const Color(0xff7052a3),
+              () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DriverBenefitsScreen(configured: widget.configured),
+                ),
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: const Color(0xff102a56), borderRadius: BorderRadius.circular(20)),
+          child: Row(children: [
+            const Icon(Icons.shield_moon_outlined, color: Color(0xffffb45f), size: 30),
+            const SizedBox(width: 12),
+            const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('A smarter way to travel', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+              SizedBox(height: 3),
+              Text('Connect with people going your way.', style: TextStyle(color: Colors.white70, fontSize: 11)),
+            ])),
+            const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 15),
+          ]),
+        ),
+        if (message.isNotEmpty)
+          Padding(padding: const EdgeInsets.all(12), child: Text(message, style: const TextStyle(color: Colors.blue))),
+      ],
+    );
+  }
+
+  Widget _heroPill(IconData icon, String label) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+    decoration: BoxDecoration(color: Colors.white.withValues(alpha: .12), borderRadius: BorderRadius.circular(30)),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.white, size: 13), const SizedBox(width: 5), Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600))]),
+  );
+
+  Widget _featureTile(IconData icon, String title, String subtitle, Color bg, Color fg, VoidCallback onTap) => Material(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(18),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xffe8edf4))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 38, height: 38, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: fg, size: 21)),
+          const SizedBox(height: 12),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xff102a56))),
+          const SizedBox(height: 3),
+          Text(subtitle, style: const TextStyle(fontSize: 10, color: Color(0xff718096))),
+        ]),
+      ),
+    ),
+  );
+
+  Future<void> _showRolePicker() async {
+    final role = await showModalBottomSheet<String>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ListTile(title: Text('Use Tip Car as', style: TextStyle(fontWeight: FontWeight.bold))),
+            ListTile(leading: const Icon(Icons.person_outline), title: const Text('Passenger'), onTap: () => Navigator.pop(context, 'passenger')),
+            ListTile(leading: const Icon(Icons.directions_car_outlined), title: const Text('Driver'), onTap: () => Navigator.pop(context, 'driver')),
+          ],
+        ),
+      ),
+    );
+    if (role != null && mounted) {
+      setState(() {
+        selectedRole = role;
+        tab = 1;
+        message = 'Mode changed to ${role == 'driver' ? 'Driver' : 'Passenger'}. Your account permissions still follow your saved profile role.';
+      });
+    }
+  }
+
+  Widget _buildRidesTab() {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: const LinearGradient(
+              colors: [Color(0xff102a56), Color(0xff246bfe)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(selectedRole == 'driver' ? 'Driver dashboard' : 'Find your next ride',
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 7),
+              Text(selectedRole == 'driver'
+                ? 'Share your journey and manage your ride details.'
+                : 'Find a seat and travel together for less.',
+                style: const TextStyle(color: Colors.white70, height: 1.35)),
+            ])),
+            const SizedBox(width: 10),
+            const Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 38),
+          ]),
+        ),
+        const SizedBox(height: 18),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 0, label: Text('Find rides'), icon: Icon(Icons.search)),
+            ButtonSegment(value: 1, label: Text('Publish ride'), icon: Icon(Icons.add_road)),
+          ],
+          selected: {tab == 1 && selectedRole == 'driver' ? 1 : 0},
+          onSelectionChanged: (selection) => setState(() {
+            selectedRole = selection.first == 1 ? 'driver' : 'passenger';
+            message = '';
+          }),
+        ),
+        const SizedBox(height: 12),
+        if (selectedRole == 'passenger') ..._buildRideSearch(),
+        if (selectedRole == 'driver') ..._buildPublishRide(),
+        if (message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(message, style: const TextStyle(color: Colors.blue)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildProfileTab() {
+    final user = db?.auth.currentUser;
+    final accountLabel = user?.email ?? user?.phone ?? 'Guest account';
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: const LinearGradient(
+              colors: [Color(0xff102a56), Color(0xff087b78)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(children: [
+            CircleAvatar(
+              radius: 29,
+              backgroundColor: Colors.white.withValues(alpha: .16),
+              backgroundImage: (avatarUrl?.isNotEmpty ?? false) ? NetworkImage(avatarUrl!) : null,
+              child: (avatarUrl?.isNotEmpty ?? false) ? null : const Icon(Icons.person_rounded, color: Colors.white, size: 30),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Your Tip Car account', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
+              Text(accountLabel, style: const TextStyle(color: Colors.white70), overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 7),
+              InkWell(onTap: photoUploading ? null : _uploadDriverPhoto, child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(photoUploading ? Icons.hourglass_top : Icons.add_a_photo_outlined, color: Colors.white, size: 15),
+                const SizedBox(width: 6),
+                Text(photoUploading ? 'Uploading photo...' : 'Add / change profile photo', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              ])),
+            ])),
+          ]),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff246bfe))),
+            title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text('Account mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
+          ),
+        ),
+        if (user == null) _buildAuthCard(),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.emoji_events_outlined),
+            title: const Text('Driver Benefits'),
+            subtitle: const Text('View driver rewards and eligibility details'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => DriverBenefitsScreen(configured: widget.configured),
+            )),
+          ),
+        ),
+        if (message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(message, style: const TextStyle(color: Colors.blue)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAuthCard() => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Join Tip Car',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: name,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Full name'),
+              ),
+              const SizedBox(height: 10),
+              const Text('I want to use Tip Car as'),
+              const SizedBox(height: 6),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(
+                    value: 'passenger',
+                    label: Text('Passenger'),
+                    icon: Icon(Icons.person_outline),
+                  ),
+                  ButtonSegment(
+                    value: 'driver',
+                    label: Text('Driver'),
+                    icon: Icon(Icons.directions_car_outlined),
+                  ),
+                ],
+                selected: {selectedRole},
+                onSelectionChanged: (selection) =>
+                    setState(() => selectedRole = selection.first),
+              ),
+              const SizedBox(height: 12),
+              SegmentedButton<int>(
+                segments: const [
+                  ButtonSegment(value: 0, label: Text('Phone OTP')),
+                  ButtonSegment(value: 1, label: Text('Email')),
+                ],
+                selected: {authMethod},
+                onSelectionChanged: (selection) =>
+                    setState(() => authMethod = selection.first),
+              ),
+              const SizedBox(height: 10),
+              if (authMethod == 0) ...[
+                TextField(
+                  controller: phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Mobile number with country code',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: sendOtp,
+                  child: const Text('Send OTP'),
+                ),
+                TextField(
+                  controller: otp,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'SMS OTP'),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: verifyOtp,
+                  child: const Text('Verify OTP'),
+                ),
+              ] else ...[
+                TextField(
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                TextField(
+                  controller: password,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Password (minimum 6 characters)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  onPressed: signInWithEmail,
+                  child: const Text('Sign in with email'),
+                ),
+                OutlinedButton(
+                  onPressed: createEmailAccount,
+                  child: const Text('Create email account'),
+                ),
+              ],
+              const SizedBox(height: 6),
+              const Text(
+                'Existing accounts keep their saved role. The selected role is used only when a new profile is created.',
+                style: TextStyle(fontSize: 11, color: Color(0xff718096)),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  List<Widget> _buildRideSearch() => [
+        TextField(
+          controller: from,
+          decoration: const InputDecoration(labelText: 'From'),
+        ),
+        TextField(
+          controller: to,
+          decoration: const InputDecoration(labelText: 'To'),
+        ),
+        const SizedBox(height: 8),
+        FilledButton(
+          onPressed: loading ? null : search,
+          child: const Text('Search rides'),
+        ),
+        if (loading) const Center(child: CircularProgressIndicator()),
+        ...rides.map((ride) {
+          final driver = ride['driver_public_profile'] is Map ? Map<String, dynamic>.from(ride['driver_public_profile'] as Map) : <String, dynamic>{};
+          final photoUrl = driver['avatar_url']?.toString() ?? '';
+          final driverName = driver['full_name']?.toString().trim();
+          return Card(margin: const EdgeInsets.only(top: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${ride['origin']} → ${ride['destination']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 7),
+            Text('${ride['vehicle_name']} · ${ride['vehicle_number']}'),
+            Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
+            Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
+            const Divider(height: 20),
+            Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff246bfe)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
+            const SizedBox(height: 8),
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: ((ride['available_seats'] as num?)?.toInt() ?? 0) > 0 ? () => book(ride) : null, child: Text(((ride['available_seats'] as num?)?.toInt() ?? 0) > 0 ? 'Select seats & book' : 'Sold out'))),
+          ])));
+        })
+      ];
+
+  List<Widget> _buildPublishRide() => [
+        TextField(
+          controller: vehicle,
+          decoration: const InputDecoration(labelText: 'Vehicle name'),
+        ),
+        TextField(
+          controller: number,
+          decoration: const InputDecoration(labelText: 'Vehicle number'),
+        ),
+        TextField(
+          controller: fare,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Fare per seat (₹)'),
+        ),
+        TextField(
+          controller: seats,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Total seats'),
+        ),
+        ListTile(
+          title: Text(
+            'Departure: ${DateFormat.yMMMd().add_jm().format(departure)}',
+          ),
+          trailing: IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () async {
+              final date = await showDatePicker(
+                context: context,
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                initialDate: departure,
+              );
+              if (date != null && mounted) {
+                setState(
+                  () => departure = DateTime(
+                    date.year,
+                    date.month,
+                    date.day,
+                    departure.hour,
+                    departure.minute,
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+        FilledButton(
+          onPressed: publish,
+          child: const Text('Publish ride'),
+        ),
+      ];
+}
+).hasMatch(vpa.text.trim())) {
       vpa.dispose();
       if (mounted) setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
       return;
