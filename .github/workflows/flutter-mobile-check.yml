@@ -18,6 +18,9 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: Generate Android platform scaffolding
+        working-directory: mobile
+        run: flutter create --platforms=android --project-name tip_car .
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
