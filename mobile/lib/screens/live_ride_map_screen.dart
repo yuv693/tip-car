@@ -183,10 +183,10 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   Future<void> _refreshRoute() async {
     final from = _driverPosition;
     final to = _pickupPosition;
-    if (from == null || to == null || _routeBusy) return;
+    if (from == null || to == null || _routeBusy) { return; }
     final now = DateTime.now();
     if (_lastRouteRequest != null &&
-        now.difference(_lastRouteRequest!) < const Duration(seconds: 8)) return;
+        now.difference(_lastRouteRequest!) < const Duration(seconds: 8)) { return; }
     _lastRouteRequest = now;
     _routeBusy = true;
     try {
@@ -216,10 +216,12 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
         });
       }
     } catch (_) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _route = [];
         _eta = 'Route/ETA temporarily unavailable';
-      });
+        });
+      }
     } finally {
       _routeBusy = false;
     }
@@ -228,10 +230,12 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   Future<void> _stopSharing() async {
     await _positionSubscription?.cancel();
     _positionSubscription = null;
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _sharing = false;
       _message = 'Location sharing stopped.';
-    });
+      });
+    }
   }
 
   @override
