@@ -116,7 +116,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               Row(
                                 children: [
                                   Expanded(child: OutlinedButton(
-                                    onPressed: () => _act(booking, 'cancel'),
+                                    onPressed: () => _act(booking, 'cancelled'),
                                     child: const Text('Decline'),
                                   )),
                                   const SizedBox(width: 8),
