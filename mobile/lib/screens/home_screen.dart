@@ -407,7 +407,20 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(children: [
           Expanded(child: _featureTile(Icons.receipt_long_rounded, 'My bookings', 'Your trip activity', const Color(0xffe8f7f0), const Color(0xff138a50), () => setState(() => tab = 2))),
           const SizedBox(width: 10),
-          Expanded(child: _featureTile(Icons.emoji_events_rounded, 'Driver benefits', 'Rewards & progress', const Color(0xfff2edff), const Color(0xff7052a3), () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DriverBenefitsScreen(configured: widget.configured)))),
+          Expanded(
+            child: _featureTile(
+              Icons.emoji_events_rounded,
+              'Driver benefits',
+              'Rewards & progress',
+              const Color(0xfff2edff),
+              const Color(0xff7052a3),
+              () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DriverBenefitsScreen(configured: widget.configured),
+                ),
+              ),
+            ),
+          ),
         ]),
         const SizedBox(height: 18),
         Container(
