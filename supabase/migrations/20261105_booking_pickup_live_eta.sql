@@ -17,7 +17,7 @@ with check (
   passenger_id = (select auth.uid())
   and exists (
     select 1 from public.bookings b
-    where b.id = booking_id and b.ride_id = ride_id
+    where b.id = booking_pickups.booking_id and b.ride_id = booking_pickups.ride_id
       and b.passenger_id = (select auth.uid())
       and b.status::text = 'confirmed'
   )
@@ -29,7 +29,7 @@ using (
   passenger_id = (select auth.uid())
   and exists (
     select 1 from public.bookings b
-    where b.id = booking_id and b.ride_id = ride_id
+    where b.id = booking_pickups.booking_id and b.ride_id = booking_pickups.ride_id
       and b.passenger_id = (select auth.uid())
       and b.status::text = 'confirmed'
   )
@@ -38,7 +38,7 @@ with check (
   passenger_id = (select auth.uid())
   and exists (
     select 1 from public.bookings b
-    where b.id = booking_id and b.ride_id = ride_id
+    where b.id = booking_pickups.booking_id and b.ride_id = booking_pickups.ride_id
       and b.passenger_id = (select auth.uid())
       and b.status::text = 'confirmed'
   )
