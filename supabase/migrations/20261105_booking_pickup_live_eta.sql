@@ -51,7 +51,7 @@ using (
   or exists (
     select 1 from public.rides r
     join public.bookings b on b.ride_id = r.id
-    where b.id = booking_id and r.id = ride_id
+    where b.id = booking_pickups.booking_id and r.id = booking_pickups.ride_id
       and r.driver_id = (select auth.uid())
       and b.status::text = 'confirmed'
   )
