@@ -261,10 +261,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: 'Sign out',
                 onPressed: () async {
                   await db!.auth.signOut();
-                  if (mounted) setState(() {
-                    message = 'Signed out.';
-                    tab = 0;
-                  });
+                  if (mounted) {
+                    setState(() {
+                      message = 'Signed out.';
+                      tab = 0;
+                    });
+                  }
                 },
                 icon: const Icon(Icons.logout),
               ),
