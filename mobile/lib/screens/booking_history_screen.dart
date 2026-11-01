@@ -59,6 +59,32 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     }
   }
 
+  Future<void> _showDriverContact(Map<String, dynamic> booking) async {
+    try {
+      final rows = await db.rpc('get_confirmed_ride_driver_contact', params: {'p_ride_id': booking['ride_id']});
+      if (!mounted) return;
+      final contacts = List<Map<String, dynamic>>.from(rows);
+      if (contacts.isEmpty) {
+        setState(() => notice = 'Driver contact is available only after booking confirmation.');
+        return;
+      }
+      final driver = contacts.first;
+      await showDialog<void>(context: context, builder: (context) => AlertDialog(
+        title: const Text('Driver contact'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          CircleAvatar(radius: 30, backgroundImage: (driver['avatar_url']?.toString().isNotEmpty ?? false) ? NetworkImage(driver['avatar_url'].toString()) : null, child: (driver['avatar_url']?.toString().isNotEmpty ?? false) ? null : const Icon(Icons.person, size: 30)),
+          const SizedBox(height: 12),
+          Text(driver['full_name']?.toString().isNotEmpty == true ? driver['full_name'].toString() : 'Tip Car driver', style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          SelectableText(driver['phone']?.toString().isNotEmpty == true ? driver['phone'].toString() : 'Phone number not added'),
+        ]),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+      ));
+    } catch (error) {
+      if (mounted) setState(() => notice = 'Could not load driver contact: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userId = db.auth.currentUser?.id;
@@ -161,6 +187,12 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               Text(DateFormat.yMMMd().add_jm().format(departure.toLocal())),
                             Text('Total: ₹${booking['total_amount']} · Payment: ${booking['payment_status']}'),
                             const SizedBox(height: 8),
+                            if (!isDriver && status == 'confirmed')
+                              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                                onPressed: () => _showDriverContact(booking),
+                                icon: const Icon(Icons.call_outlined),
+                                label: const Text('Driver details & phone'),
+                              )),
                             if (status == 'confirmed')
                               SizedBox(
                                 width: double.infinity,
