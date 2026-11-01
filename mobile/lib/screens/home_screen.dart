@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../widgets/tip_car_brand.dart';
+
 import 'driver_benefits_screen.dart';
 import 'booking_history_screen.dart';
 
@@ -254,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
-          title: const Text('🚗 TIP CAR'),
+          title: const TipCarBrand(compact: true),
           actions: [
             if (db?.auth.currentUser != null)
               IconButton(
