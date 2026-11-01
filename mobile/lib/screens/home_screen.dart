@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -34,11 +37,62 @@ class _HomeScreenState extends State<HomeScreen> {
   String message = '';
   String selectedRole = 'passenger';
   bool loading = false;
+  bool photoUploading = false;
+  String? avatarUrl;
   int tab = 0;
   int authMethod = 0;
 
   SupabaseClient? get db =>
       widget.configured ? Supabase.instance.client : null;
+
+
+  Future<void> _loadAvatar() async {
+    if (!widget.configured || db!.auth.currentUser == null) return;
+    try {
+      final row = await db!.from('profiles').select('avatar_url')
+          .eq('id', db!.auth.currentUser!.id).maybeSingle();
+      if (mounted) setState(() => avatarUrl = row?['avatar_url']?.toString());
+    } catch (_) {
+      // Profile image is optional; do not block the rest of the app.
+    }
+  }
+
+  Future<void> _uploadDriverPhoto() async {
+    final user = db?.auth.currentUser;
+    if (user == null) {
+      setState(() => message = 'Please sign in before uploading your driver photo.');
+      return;
+    }
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 82,
+        maxWidth: 1200,
+      );
+      if (picked == null) return;
+      setState(() { photoUploading = true; message = ''; });
+      final path = '${user.id}/avatar.jpg';
+      await db!.storage.from('driver-avatars').upload(
+        path,
+        File(picked.path),
+        fileOptions: const FileOptions(
+          upsert: true,
+          contentType: 'image/jpeg',
+          cacheControl: '3600',
+        ),
+      );
+      final url = '${db!.storage.from('driver-avatars').getPublicUrl(path)}?v=${DateTime.now().millisecondsSinceEpoch}';
+      await db!.from('profiles').update({'avatar_url': url}).eq('id', user.id);
+      if (mounted) setState(() {
+        avatarUrl = url;
+        message = 'Profile photo uploaded successfully.';
+      });
+    } catch (error) {
+      if (mounted) setState(() => message = 'Photo upload failed: $error');
+    } finally {
+      if (mounted) setState(() => photoUploading = false);
+    }
+  }
 
   Future<void> _ensureProfile(dynamic user) async {
     final metadata = user.userMetadata as Map<String, dynamic>? ?? {};
@@ -567,13 +621,20 @@ class _HomeScreenState extends State<HomeScreen> {
             CircleAvatar(
               radius: 29,
               backgroundColor: Colors.white.withValues(alpha: .16),
-              child: const Icon(Icons.person_rounded, color: Colors.white, size: 30),
+              backgroundImage: (avatarUrl?.isNotEmpty ?? false) ? NetworkImage(avatarUrl!) : null,
+              child: (avatarUrl?.isNotEmpty ?? false) ? null : const Icon(Icons.person_rounded, color: Colors.white, size: 30),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const Text('Your Tip Car account', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
               const SizedBox(height: 5),
               Text(accountLabel, style: const TextStyle(color: Colors.white70), overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 7),
+              InkWell(onTap: photoUploading ? null : _uploadDriverPhoto, child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(photoUploading ? Icons.hourglass_top : Icons.add_a_photo_outlined, color: Colors.white, size: 15),
+                const SizedBox(width: 6),
+                Text(photoUploading ? 'Uploading photo...' : 'Add / change profile photo', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              ])),
             ])),
           ]),
         ),
