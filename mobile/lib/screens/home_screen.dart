@@ -72,13 +72,16 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (picked == null) return;
       setState(() { photoUploading = true; message = ''; });
-      final path = '${user.id}/avatar.jpg';
+      final extension = picked.path.split('.').last.toLowerCase();
+      final safeExtension = ['jpg', 'jpeg', 'png', 'webp'].contains(extension) ? extension : 'jpg';
+      final contentType = safeExtension == 'png' ? 'image/png' : (safeExtension == 'webp' ? 'image/webp' : 'image/jpeg');
+      final path = '${user.id}/avatar.$safeExtension';
       await db!.storage.from('driver-avatars').upload(
         path,
         File(picked.path),
-        fileOptions: const FileOptions(
+        fileOptions: FileOptions(
           upsert: true,
-          contentType: 'image/jpeg',
+          contentType: contentType,
           cacheControl: '3600',
         ),
       );
@@ -146,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       final user = db!.auth.currentUser;
       if (user != null) await _ensureProfile(user);
+      await _loadAvatar();
       if (mounted) setState(() => message = 'Signed in with phone.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
@@ -164,6 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       final user = db!.auth.currentUser;
       if (user != null) await _ensureProfile(user);
+      await _loadAvatar();
       if (mounted) setState(() => message = 'Signed in with email.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
@@ -189,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       if (response.user != null && response.session != null) {
         await _ensureProfile(response.user);
+        await _loadAvatar();
       }
       if (!mounted) return;
       setState(() => message = response.session == null
