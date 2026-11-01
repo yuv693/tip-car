@@ -494,17 +494,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRidesTab() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        Text(
-          selectedRole == 'driver' ? 'Driver dashboard' : 'Find your next ride',
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: const LinearGradient(
+              colors: [Color(0xff102a56), Color(0xff246bfe)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(selectedRole == 'driver' ? 'Driver dashboard' : 'Find your next ride',
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 7),
+              Text(selectedRole == 'driver'
+                ? 'Share your journey and manage your ride details.'
+                : 'Find a seat and travel together for less.',
+                style: const TextStyle(color: Colors.white70, height: 1.35)),
+            ])),
+            const SizedBox(width: 10),
+            const Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 38),
+          ]),
         ),
-        const SizedBox(height: 6),
-        Text(selectedRole == 'driver'
-            ? 'Publish a journey and manage passenger requests.'
-            : 'Search available seats on journeys going your way.'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         SegmentedButton<int>(
           segments: const [
             ButtonSegment(value: 0, label: Text('Find rides'), icon: Icon(Icons.search)),
@@ -530,16 +546,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
+    final accountLabel = user?.email ?? user?.phone ?? 'Guest account';
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
-        const Text('My Profile', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(25),
+            gradient: const LinearGradient(
+              colors: [Color(0xff102a56), Color(0xff087b78)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Row(children: [
+            CircleAvatar(
+              radius: 29,
+              backgroundColor: Colors.white.withValues(alpha: .16),
+              child: const Icon(Icons.person_rounded, color: Colors.white, size: 30),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Your Tip Car account', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
+              Text(accountLabel, style: const TextStyle(color: Colors.white70), overflow: TextOverflow.ellipsis),
+            ])),
+          ]),
+        ),
         const SizedBox(height: 16),
         Card(
           child: ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.person)),
-            title: Text(user?.email ?? user?.phone ?? 'Guest account'),
-            subtitle: Text('Current mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
+            leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff246bfe))),
+            title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text('Account mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
           ),
         ),
         if (user == null) _buildAuthCard(),
