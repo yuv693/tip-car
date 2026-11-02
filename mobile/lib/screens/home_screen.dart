@@ -600,7 +600,7 @@ class _HomeScreenState extends State<HomeScreen> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xff102a56), Color(0xff174d91), Color(0xff087b78)],
+              colors: [Color(0xff0b1530), Color(0xff174d91), Color(0xff15b5b3)],
             ),
             boxShadow: const [BoxShadow(color: Color(0x24102a56), blurRadius: 22, offset: Offset(0, 10))],
           ),
@@ -642,20 +642,20 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 18),
         Row(children: [
-          const Expanded(child: Text('Where are you going?', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xff102a56)))),
+          const Expanded(child: Text('Where are you going?', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: Color(0xff0b1530)))),
           TextButton.icon(onPressed: _showRolePicker, icon: const Icon(Icons.swap_horiz, size: 17), label: Text(selectedRole == 'driver' ? 'Driver' : 'Passenger')),
         ]),
         Card(
           margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: Color(0xffe8edf4))),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22), side: const BorderSide(color: Color(0xffe5eaf2))),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Column(children: [
-                  const SizedBox(height: 15, child: Icon(Icons.radio_button_checked, color: Color(0xff138a50), size: 17)),
+                  const SizedBox(height: 15, child: Icon(Icons.radio_button_checked, color: Color(0xff15b5b3), size: 17)),
                   Container(width: 2, height: 38, color: const Color(0xffd5deea)),
-                  const SizedBox(height: 15, child: Icon(Icons.location_on, color: Color(0xfff28c28), size: 19)),
+                  const SizedBox(height: 15, child: Icon(Icons.location_on, color: Color(0xffffb02e), size: 19)),
                 ]),
                 const SizedBox(width: 12),
                 Expanded(child: Column(children: [
@@ -666,7 +666,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ]),
               const SizedBox(height: 14),
               SizedBox(width: double.infinity, height: 52, child: FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: const Color(0xfff28c28), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                style: FilledButton.styleFrom(backgroundColor: const Color(0xffffb02e), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                 onPressed: () { setState(() { selectedRole = 'passenger'; tab = 1; }); search(); },
                 icon: const Icon(Icons.search_rounded), label: const Text('SEARCH RIDES', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: .7)),
               )),
@@ -674,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 22),
-        const Text('Explore Tip Car', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xff102a56))),
+        const Text('Explore Tip Car', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xff0b1530))),
         const SizedBox(height: 11),
         Row(children: [
           Expanded(child: _featureTile(Icons.search_rounded, 'Find a ride', 'Travel your way', const Color(0xffeaf2ff), const Color(0xff174d91), () { setState(() { selectedRole = 'passenger'; tab = 1; }); })),
@@ -683,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
         const SizedBox(height: 10),
         Row(children: [
-          Expanded(child: _featureTile(Icons.receipt_long_rounded, 'My bookings', 'Your trip activity', const Color(0xffe8f7f0), const Color(0xff138a50), () => setState(() => tab = 2))),
+          Expanded(child: _featureTile(Icons.receipt_long_rounded, 'My bookings', 'Your trip activity', const Color(0xffe8f7f0), const Color(0xff15b5b3), () => setState(() => tab = 2))),
           const SizedBox(width: 10),
           Expanded(
             child: _featureTile(
@@ -703,7 +703,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: const Color(0xff102a56), borderRadius: BorderRadius.circular(20)),
+          decoration: BoxDecoration(color: const Color(0xff0b1530), borderRadius: BorderRadius.circular(20)),
           child: Row(children: [
             const Icon(Icons.shield_moon_outlined, color: Color(0xffffb45f), size: 30),
             const SizedBox(width: 12),
@@ -735,11 +735,11 @@ class _HomeScreenState extends State<HomeScreen> {
       borderRadius: BorderRadius.circular(18),
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xffe8edf4))),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xffe5eaf2))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Container(width: 38, height: 38, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: fg, size: 21)),
           const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xff102a56))),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xff0b1530))),
           const SizedBox(height: 3),
           Text(subtitle, style: const TextStyle(fontSize: 10, color: Color(0xff718096))),
         ]),
@@ -779,7 +779,7 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(25),
             gradient: const LinearGradient(
-              colors: [Color(0xff102a56), Color(0xff246bfe)],
+              colors: [Color(0xff0b1530), Color(0xff15b5b3)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -833,7 +833,7 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(25),
             gradient: const LinearGradient(
-              colors: [Color(0xff102a56), Color(0xff087b78)],
+              colors: [Color(0xff0b1530), Color(0xff15b5b3)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -862,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 16),
         Card(
           child: ListTile(
-            leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff246bfe))),
+            leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff15b5b3))),
             title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text('Account mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
           ),
@@ -1089,7 +1089,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
             Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
             const Divider(height: 20),
-            Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff246bfe)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
+            Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff15b5b3)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
             const SizedBox(height: 8),
             SizedBox(width: double.infinity, child: FilledButton(onPressed: ((ride['available_seats'] as num?)?.toInt() ?? 0) > 0 ? () => book(ride) : null, child: Text(((ride['available_seats'] as num?)?.toInt() ?? 0) > 0 ? 'Select seats & book' : 'Sold out'))),
           ])));

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 
-const tipCarNavy = Color(0xff102a56);
-const tipCarOrange = Color(0xfff28c28);
-const tipCarGreen = Color(0xff138a50);
+const tipCarNavy = Color(0xff0b1530);
+const tipCarOrange = Color(0xffffb02e);
+const tipCarGreen = Color(0xff15b5b3);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,9 +30,9 @@ class TipCarApp extends StatelessWidget {
             seedColor: tipCarNavy,
             primary: tipCarNavy,
             secondary: tipCarOrange,
-            surface: const Color(0xfff7f8fb),
+            surface: const Color(0xfff5f7fb),
           ),
-          scaffoldBackgroundColor: const Color(0xfff7f8fb),
+          scaffoldBackgroundColor: const Color(0xfff5f7fb),
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.white,
             foregroundColor: tipCarNavy,
@@ -46,7 +46,7 @@ class TipCarApp extends StatelessWidget {
             margin: const EdgeInsets.only(bottom: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
-              side: const BorderSide(color: Color(0xffe8edf4)),
+              side: const BorderSide(color: Color(0xffe5eaf2)),
             ),
           ),
           navigationBarTheme: NavigationBarThemeData(
@@ -67,11 +67,11 @@ class TipCarApp extends StatelessWidget {
             fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xffdce3ed)),
+              borderSide: const BorderSide(color: Color(0xffdce4ef)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xffdce3ed)),
+              borderSide: const BorderSide(color: Color(0xffdce4ef)),
             ),
           ),
         ),
