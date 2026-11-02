@@ -215,6 +215,68 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> sendLinkedEmailCode() async {
+    if (email.text.trim().isEmpty) {
+      setState(() => message = 'Enter the email address you want to add.');
+      return;
+    }
+    try {
+      await db!.auth.updateUser(UserAttributes(email: email.text.trim()));
+      if (mounted) setState(() => message = 'Verification code sent to the new email. Your current sign-in stays active until verification.');
+    } catch (error) {
+      if (mounted) setState(() => message = 'Could not add email: $error');
+    }
+  }
+
+  Future<void> sendLinkedPhoneCode() async {
+    if (phone.text.trim().isEmpty) {
+      setState(() => message = 'Enter the mobile number with country code.');
+      return;
+    }
+    try {
+      await db!.auth.updateUser(UserAttributes(phone: phone.text.trim()));
+      if (mounted) setState(() => message = 'SMS verification code sent to the new number.');
+    } catch (error) {
+      if (mounted) setState(() => message = 'Could not add phone: $error');
+    }
+  }
+
+  Future<void> verifyLinkedEmailCode() async {
+    if (email.text.trim().isEmpty || otp.text.trim().isEmpty) {
+      setState(() => message = 'Enter the new email and its verification code.');
+      return;
+    }
+    try {
+      await db!.auth.verifyOTP(
+        email: email.text.trim(),
+        token: otp.text.trim(),
+        type: OtpType.emailChange,
+      );
+      await _loadAvatar();
+      if (mounted) setState(() => message = 'Email verified and added to this Tip Car account.');
+    } catch (error) {
+      if (mounted) setState(() => message = 'Email verification failed: $error');
+    }
+  }
+
+  Future<void> verifyLinkedPhoneCode() async {
+    if (phone.text.trim().isEmpty || otp.text.trim().isEmpty) {
+      setState(() => message = 'Enter the new mobile number and its SMS code.');
+      return;
+    }
+    try {
+      await db!.auth.verifyOTP(
+        phone: phone.text.trim(),
+        token: otp.text.trim(),
+        type: OtpType.phoneChange,
+      );
+      await _loadAvatar();
+      if (mounted) setState(() => message = 'Phone verified and added to this Tip Car account.');
+    } catch (error) {
+      if (mounted) setState(() => message = 'Phone verification failed: $error');
+    }
+  }
+
   Future<void> createEmailAccount() async {
     if (name.text.trim().isEmpty ||
         email.text.trim().isEmpty ||
@@ -806,6 +868,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         if (user == null) _buildAuthCard(),
+        if (user != null) _buildLinkedSignInCard(),
         Card(
           child: ListTile(
             leading: const Icon(Icons.emoji_events_outlined),
@@ -824,6 +887,55 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
+  Widget _buildLinkedSignInCard() => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('Add a backup sign-in method', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              const Text(
+                'You are signed in. Add and verify another email or phone number to use it on this same account. A method already attached to another account cannot be silently merged.',
+                style: TextStyle(fontSize: 12, color: Color(0xff718096)),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: email,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: const InputDecoration(labelText: 'Email to add'),
+              ),
+              const SizedBox(height: 6),
+              FilledButton.tonal(onPressed: sendLinkedEmailCode, child: const Text('Send email verification code')),
+              const SizedBox(height: 10),
+              TextField(
+                controller: phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Mobile number to add (+country code)'),
+              ),
+              const SizedBox(height: 6),
+              FilledButton.tonal(onPressed: sendLinkedPhoneCode, child: const Text('Send SMS verification code')),
+              const SizedBox(height: 10),
+              TextField(
+                controller: otp,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Verification code (from email or SMS)'),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton(onPressed: verifyLinkedEmailCode, child: const Text('Verify email')),
+                  OutlinedButton(onPressed: verifyLinkedPhoneCode, child: const Text('Verify phone')),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
 
   Widget _buildAuthCard() => Card(
         child: Padding(
