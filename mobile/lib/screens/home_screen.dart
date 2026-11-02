@@ -160,6 +160,42 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> sendEmailOtp() async {
+    if (email.text.trim().isEmpty) {
+      setState(() => message = 'Enter your email address.');
+      return;
+    }
+    try {
+      await db!.auth.signInWithOtp(
+        email: email.text.trim(),
+        shouldCreateUser: false,
+      );
+      if (mounted) setState(() => message = 'Email login code sent. Check your inbox and spam folder.');
+    } catch (error) {
+      if (mounted) setState(() => message = error.toString());
+    }
+  }
+
+  Future<void> verifyEmailOtp() async {
+    if (email.text.trim().isEmpty || otp.text.trim().isEmpty) {
+      setState(() => message = 'Enter your email address and the code from your email.');
+      return;
+    }
+    try {
+      await db!.auth.verifyOTP(
+        email: email.text.trim(),
+        token: otp.text.trim(),
+        type: OtpType.email,
+      );
+      final user = db!.auth.currentUser;
+      if (user != null) await _ensureProfile(user);
+      await _loadAvatar();
+      if (mounted) setState(() => message = 'Signed in with email code.');
+    } catch (error) {
+      if (mounted) setState(() => message = error.toString());
+    }
+  }
+
   Future<void> signInWithEmail() async {
     if (email.text.trim().isEmpty || password.text.isEmpty) {
       setState(() => message = 'Enter your email and password.');
@@ -173,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = db!.auth.currentUser;
       if (user != null) await _ensureProfile(user);
       await _loadAvatar();
-      if (mounted) setState(() => message = 'Signed in with email.');
+      if (mounted) setState(() => message = 'Signed in with email and password.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
     }
@@ -829,7 +865,8 @@ class _HomeScreenState extends State<HomeScreen> {
               SegmentedButton<int>(
                 segments: const [
                   ButtonSegment(value: 0, label: Text('Phone OTP')),
-                  ButtonSegment(value: 1, label: Text('Email')),
+                  ButtonSegment(value: 1, label: Text('Email OTP')),
+                  ButtonSegment(value: 2, label: Text('Email + Password')),
                 ],
                 selected: {authMethod},
                 onSelectionChanged: (selection) =>
@@ -866,22 +903,43 @@ class _HomeScreenState extends State<HomeScreen> {
                   autocorrect: false,
                   decoration: const InputDecoration(labelText: 'Email'),
                 ),
-                TextField(
-                  controller: password,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password (minimum 6 characters)',
+                if (authMethod == 1) ...[
+                  FilledButton(
+                    onPressed: sendEmailOtp,
+                    child: const Text('Send email code'),
                   ),
-                ),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: signInWithEmail,
-                  child: const Text('Sign in with email'),
-                ),
-                OutlinedButton(
-                  onPressed: createEmailAccount,
-                  child: const Text('Create email account'),
-                ),
+                  TextField(
+                    controller: otp,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Email verification code'),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: verifyEmailOtp,
+                    child: const Text('Verify code & sign in'),
+                  ),
+                  const Text(
+                    'Email code is for existing accounts. New accounts can be created using Email + Password.',
+                    style: TextStyle(fontSize: 11, color: Color(0xff718096)),
+                  ),
+                ] else ...[
+                  TextField(
+                    controller: password,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password (minimum 6 characters)',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  FilledButton(
+                    onPressed: signInWithEmail,
+                    child: const Text('Sign in with email'),
+                  ),
+                  OutlinedButton(
+                    onPressed: createEmailAccount,
+                    child: const Text('Create email account'),
+                  ),
+                ],
               ],
               const SizedBox(height: 6),
               const Text(
