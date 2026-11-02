@@ -1019,57 +1019,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLinkedSignInCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Add a backup sign-in method', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              const Text(
-                'You are signed in. Add and verify another email or phone number to use it on this same account. A method already attached to another account cannot be silently merged.',
-                style: TextStyle(fontSize: 12, color: Color(0xff718096)),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: email,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: const InputDecoration(labelText: 'Email to add'),
-              ),
-              const SizedBox(height: 6),
-              FilledButton.tonal(onPressed: sendLinkedEmailCode, child: const Text('Send email verification code')),
-              const SizedBox(height: 10),
-              TextField(
-                controller: phone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Mobile number to add (+country code)'),
-              ),
-              const SizedBox(height: 6),
-              FilledButton.tonal(onPressed: sendLinkedPhoneCode, child: const Text('Send SMS verification code')),
-              const SizedBox(height: 10),
-              TextField(
-                controller: otp,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Verification code (from email or SMS)'),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  OutlinedButton(onPressed: verifyLinkedEmailCode, child: const Text('Verify email')),
-                  OutlinedButton(onPressed: verifyLinkedPhoneCode, child: const Text('Verify phone')),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildAuthCard() => _buildRegistrationScreen();
-
   List<Widget> _buildRideSearch() => [
         TextField(
           controller: from,
