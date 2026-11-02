@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'full_name': fullName,
         'role': selectedRole,
         'phone': mobile,
-      }, onConflict: 'id', ignoreDuplicates: true);
+      }, onConflict: 'id');
       await _loadAvatar();
       if (mounted) {
         setState(() {
@@ -953,7 +953,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
-    final accountLabel = user?.email ?? user?.phone ?? 'Guest account';
+    final metadata = user?.userMetadata ?? <String, dynamic>{};
+    final profileName = (metadata['full_name'] ?? '').toString().trim();
+    final profilePhone = (metadata['phone'] ?? '').toString().trim();
+    final accountLabel = profileName.isNotEmpty ? profileName : 'Tip Car member';
+    final phoneLabel = profilePhone.isNotEmpty ? profilePhone : 'Mobile number not added';
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
@@ -993,11 +997,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff15b5b3))),
             title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text('Account mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
+            subtitle: Text('${selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
           ),
         ),
-        if (user == null) _buildAuthCard(),
-        if (user != null) _buildLinkedSignInCard(),
         Card(
           child: ListTile(
             leading: const Icon(Icons.emoji_events_outlined),
@@ -1016,57 +1018,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-  Widget _buildLinkedSignInCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Add a backup sign-in method', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              const Text(
-                'You are signed in. Add and verify another email or phone number to use it on this same account. A method already attached to another account cannot be silently merged.',
-                style: TextStyle(fontSize: 12, color: Color(0xff718096)),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: email,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                decoration: const InputDecoration(labelText: 'Email to add'),
-              ),
-              const SizedBox(height: 6),
-              FilledButton.tonal(onPressed: sendLinkedEmailCode, child: const Text('Send email verification code')),
-              const SizedBox(height: 10),
-              TextField(
-                controller: phone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Mobile number to add (+country code)'),
-              ),
-              const SizedBox(height: 6),
-              FilledButton.tonal(onPressed: sendLinkedPhoneCode, child: const Text('Send SMS verification code')),
-              const SizedBox(height: 10),
-              TextField(
-                controller: otp,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Verification code (from email or SMS)'),
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  OutlinedButton(onPressed: verifyLinkedEmailCode, child: const Text('Verify email')),
-                  OutlinedButton(onPressed: verifyLinkedPhoneCode, child: const Text('Verify phone')),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildAuthCard() => _buildRegistrationScreen();
 
   List<Widget> _buildRideSearch() => [
         TextField(
