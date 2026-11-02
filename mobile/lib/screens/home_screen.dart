@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../widgets/tip_car_brand.dart';
 
@@ -46,6 +47,134 @@ class _HomeScreenState extends State<HomeScreen> {
   SupabaseClient? get db =>
       widget.configured ? Supabase.instance.client : null;
 
+
+  Future<void> _registerGuest() async {
+    if (name.text.trim().isEmpty ||
+        phone.text.trim().replaceAll(RegExp(r'[^0-9]'), '').length < 7) {
+      setState(() => message = 'Enter your name and a valid mobile number.');
+      return;
+    }
+    if (!widget.configured || db == null) {
+      setState(() => message = 'Tip Car server setup is not connected yet.');
+      return;
+    }
+
+    setState(() { loading = true; message = ''; });
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception('Please allow location permission to continue.');
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+      final fullName = name.text.trim();
+      final mobile = phone.text.trim();
+      final response = await db!.auth.signInAnonymously(data: {
+        'full_name': fullName,
+        'role': selectedRole,
+        'phone': mobile,
+        'last_latitude': position.latitude,
+        'last_longitude': position.longitude,
+      });
+      final user = response.user ?? db!.auth.currentUser;
+      if (user == null) throw Exception('Could not create your Tip Car account.');
+      await db!.from('profiles').upsert({
+        'id': user.id,
+        'full_name': fullName,
+        'role': selectedRole,
+        'phone': mobile,
+      }, onConflict: 'id', ignoreDuplicates: true);
+      await _loadAvatar();
+      if (mounted) {
+        setState(() {
+          message = 'Welcome to Tip Car!';
+          tab = 0;
+        });
+      }
+    } catch (error) {
+      if (mounted) setState(() => message = 'Registration failed: $error');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Widget _buildRegistrationScreen() => SafeArea(
+    child: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(22),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const TipCarBrand(),
+                  const SizedBox(height: 18),
+                  const Text('Welcome to Tip Car',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: tipCarNavy)),
+                  const SizedBox(height: 6),
+                  const Text('Enter your details and allow location to get started.',
+                    style: TextStyle(color: Color(0xff718096))),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: name,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(labelText: 'Your name'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phone,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(labelText: 'Mobile number'),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('I want to use Tip Car as'),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'passenger', label: Text('Passenger'), icon: Icon(Icons.person_outline)),
+                      ButtonSegment(value: 'driver', label: Text('Driver'), icon: Icon(Icons.directions_car_outlined)),
+                    ],
+                    selected: {selectedRole},
+                    onSelectionChanged: (selection) => setState(() => selectedRole = selection.first),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: loading ? null : _registerGuest,
+                    icon: loading
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.my_location),
+                    label: Text(loading ? 'Please wait...' : 'Allow Location & Continue'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: tipCarNavy,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('No OTP, email or password required. Your mobile number is not verified.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 11, color: Color(0xff718096))),
+                  if (message.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(message, style: const TextStyle(color: Colors.red)),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   Future<void> _loadAvatar() async {
     if (!widget.configured || db!.auth.currentUser == null) return;
@@ -397,8 +526,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final vpa = TextEditingController();
     int selectedSeats = 1;
     String method = 'cash';
-    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();
-    final choice = await showDialog<bool>(
+    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();    final choice = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
@@ -562,16 +690,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               )
-            : IndexedStack(
-                index: tab,
-                children: [
-                  _buildHomeTab(),
-                  _buildRidesTab(),
-                  const BookingHistoryScreen(),
-                  _buildProfileTab(),
-                ],
-              ),
-        bottomNavigationBar: widget.configured
+            : db!.auth.currentUser == null
+                ? _buildRegistrationScreen()
+                : IndexedStack(
+                    index: tab,
+                    children: [
+                      _buildHomeTab(),
+                      _buildRidesTab(),
+                      const BookingHistoryScreen(),
+                      _buildProfileTab(),
+                    ],
+                  ),
+        bottomNavigationBar: widget.configured && db!.auth.currentUser != null
             ? NavigationBar(
                 selectedIndex: tab,
                 onDestinationSelected: (index) => setState(() {
@@ -797,8 +927,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 10),
             const Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 38),
           ]),
-        ),
-        const SizedBox(height: 18),
+        ),        const SizedBox(height: 18),
         SegmentedButton<int>(
           segments: const [
             ButtonSegment(value: 0, label: Text('Find rides'), icon: Icon(Icons.search)),
@@ -937,131 +1066,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
 
-  Widget _buildAuthCard() => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Join Tip Car',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: name,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Full name'),
-              ),
-              const SizedBox(height: 10),
-              const Text('I want to use Tip Car as'),
-              const SizedBox(height: 6),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                    value: 'passenger',
-                    label: Text('Passenger'),
-                    icon: Icon(Icons.person_outline),
-                  ),
-                  ButtonSegment(
-                    value: 'driver',
-                    label: Text('Driver'),
-                    icon: Icon(Icons.directions_car_outlined),
-                  ),
-                ],
-                selected: {selectedRole},
-                onSelectionChanged: (selection) =>
-                    setState(() => selectedRole = selection.first),
-              ),
-              const SizedBox(height: 12),
-              SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: 0, label: Text('Phone OTP')),
-                  ButtonSegment(value: 1, label: Text('Email OTP')),
-                  ButtonSegment(value: 2, label: Text('Email + Password')),
-                ],
-                selected: {authMethod},
-                onSelectionChanged: (selection) =>
-                    setState(() => authMethod = selection.first),
-              ),
-              const SizedBox(height: 10),
-              if (authMethod == 0) ...[
-                TextField(
-                  controller: phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Mobile number with country code',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: sendOtp,
-                  child: const Text('Send OTP'),
-                ),
-                TextField(
-                  controller: otp,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'SMS OTP'),
-                ),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: verifyOtp,
-                  child: const Text('Verify OTP'),
-                ),
-              ] else ...[
-                TextField(
-                  controller: email,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  decoration: const InputDecoration(labelText: 'Email'),
-                ),
-                if (authMethod == 1) ...[
-                  FilledButton(
-                    onPressed: sendEmailOtp,
-                    child: const Text('Send email code'),
-                  ),
-                  TextField(
-                    controller: otp,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Email verification code'),
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: verifyEmailOtp,
-                    child: const Text('Verify code & sign in'),
-                  ),
-                  const Text(
-                    'Email code is for existing accounts. New accounts can be created using Email + Password.',
-                    style: TextStyle(fontSize: 11, color: Color(0xff718096)),
-                  ),
-                ] else ...[
-                  TextField(
-                    controller: password,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password (minimum 6 characters)',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: signInWithEmail,
-                    child: const Text('Sign in with email'),
-                  ),
-                  OutlinedButton(
-                    onPressed: createEmailAccount,
-                    child: const Text('Create email account'),
-                  ),
-                ],
-              ],
-              const SizedBox(height: 6),
-              const Text(
-                'Existing accounts keep their saved role. The selected role is used only when a new profile is created.',
-                style: TextStyle(fontSize: 11, color: Color(0xff718096)),
-              ),
-            ],
-          ),
-        ),
-      );
+  Widget _buildAuthCard() => _buildRegistrationScreen();
 
   List<Widget> _buildRideSearch() => [
         TextField(
