@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'full_name': fullName,
         'role': selectedRole,
         'phone': mobile,
-      }, onConflict: 'id', ignoreDuplicates: true);
+      }, onConflict: 'id');
       await _loadAvatar();
       if (mounted) {
         setState(() {
@@ -953,7 +953,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
-    final accountLabel = user?.email ?? user?.phone ?? 'Guest account';
+    final metadata = user?.userMetadata ?? <String, dynamic>{};
+    final profileName = (metadata['full_name'] ?? '').toString().trim();
+    final profilePhone = (metadata['phone'] ?? '').toString().trim();
+    final accountLabel = profileName.isNotEmpty ? profileName : 'Tip Car member';
+    final phoneLabel = profilePhone.isNotEmpty ? profilePhone : 'Mobile number not added';
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
@@ -993,11 +997,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff15b5b3))),
             title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text('Account mode: ${selectedRole == 'driver' ? 'Driver' : 'Passenger'}'),
+            subtitle: Text('${selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
           ),
         ),
-        if (user == null) _buildAuthCard(),
-        if (user != null) _buildLinkedSignInCard(),
         Card(
           child: ListTile(
             leading: const Icon(Icons.emoji_events_outlined),
