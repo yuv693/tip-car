@@ -229,9 +229,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> sendOtp() async {
-    final raw = phone.text.trim().replaceAll(RegExp(r'[\\s-]'), '');
+    final raw = phone.text.trim().replaceAll(' ', '').replaceAll('-', '');
     final normalized = raw.startsWith('+') ? raw : '+91$raw';
-    if (!RegExp(r'^\\+[1-9]\\d{7,14}
+    final digits = normalized.replaceAll(RegExp('[^0-9]'), '');
+    if (!normalized.startsWith('+') || digits.length < 8 || digits.length > 15) {
+      setState(() => message = 'Enter a valid mobile number, for example +91 98765 43210.');
+      return;
+    }
+    if (name.text.trim().isEmpty) {
+      setState(() => message = 'Enter your name first.');
+      return;
+    }
+    setState(() { loading = true; message = ''; });
+    try {
+      phone.text = normalized;
+      await db!.auth.signInWithOtp(phone: normalized);
+      if (mounted) setState(() { otpSent = true; message = 'SMS code sent. Enter it below.'; });
+    } catch (error) {
+      if (mounted) setState(() => message = 'Could not send SMS code: $error');
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
 
   Future<void> verifyOtp() async {
     if (otp.text.trim().length < 4) {
