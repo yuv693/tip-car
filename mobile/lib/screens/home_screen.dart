@@ -267,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final user = db!.auth.currentUser;
       if (user != null) await _ensureProfile(user);
       await _loadAvatar();
-      if (mounted) setState(() { message = 'Mobile verified. Welcome to Tip Car!'; tab = 0; });
+      if (mounted) setState(() { message = 'Mobile verified. Welcome to Tip Car!'; tab = 0; otpSent = false; otp.clear(); });
     } catch (error) {
       if (mounted) setState(() => message = 'Verification failed: $error');
     } finally {
@@ -659,6 +659,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     setState(() {
                       message = 'Signed out.';
                       tab = 0;
+                      otpSent = false;
+                      otp.clear();
                     });
                   }
                 },
