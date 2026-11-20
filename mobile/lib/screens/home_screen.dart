@@ -581,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     if (method == 'upi' &&
-        !RegExp(r'^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$').hasMatch(vpa.text.trim())) {
+        !isValidUpiVpa(vpa.text)) {
       vpa.dispose();
       if (mounted) setState(() => message = 'Enter a valid Tip Car UPI ID before continuing.');
       return;
