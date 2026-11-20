@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../widgets/tip_car_brand.dart';
+import '../utils/payment_validation.dart';
 
 import 'driver_benefits_screen.dart';
 import 'booking_history_screen.dart';
@@ -554,13 +555,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (method == 'upi') ...[
                   TextField(
                     controller: vpa,
-                    decoration: const InputDecoration(labelText: 'Tip Car UPI ID (VPA)', hintText: 'yourname@bank'),
+                    decoration: const InputDecoration(labelText: 'Payee UPI ID (VPA)', hintText: '9876543210@ybl'),
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const Padding(
                     padding: EdgeInsets.only(top: 8),
                     child: Text(
-                      'UPI intent opens your payment app. Payment remains unverified until a gateway/merchant confirmation is connected.',
+                      'Check the payee name in your UPI app before paying. Tip Car does not verify or collect this payment yet.',
                       style: TextStyle(fontSize: 11, color: Colors.blueGrey),
                     ),
                   ),
