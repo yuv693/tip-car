@@ -28,7 +28,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     try {
       final rows = await db
           .from('bookings')
-          .select('id, ride_id, passenger_id, seats, total_amount, status, payment_status, created_at, rides(origin, destination, departure_at, vehicle_name, driver_id)')
+          .select('id, ride_id, passenger_id, seats, total_amount, status, payment_status, created_at, rides(origin, destination, departure_at, vehicle_name, vehicle_type, driver_id)')
           .order('created_at', ascending: false);
       if (!mounted) return;
       setState(() => bookings = List<Map<String, dynamic>>.from(rows));
@@ -186,7 +186,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text('${ride['vehicle_name'] ?? 'Vehicle'} · ${booking['seats']} seat(s)'),
+                            Text('${ride['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : ride['vehicle_type'] == 'car' ? '🚗 Car Taxi' : '🚌 Bus'} · ${ride['vehicle_name'] ?? 'Vehicle'} · ${booking['seats']} seat(s)'),
                             if (departure != null)
                               Text(DateFormat.yMMMd().add_jm().format(departure.toLocal())),
                             Text('Total: ₹${booking['total_amount']} · Payment: ${booking['payment_status']}'),
