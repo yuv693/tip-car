@@ -24,6 +24,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: 3.38.10
           channel: stable
           cache: true
       - name: Generate Android platform scaffolding
