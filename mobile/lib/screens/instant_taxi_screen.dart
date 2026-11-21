@@ -171,7 +171,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         (row['longitude'] as num).toDouble(),
       );
       setState(() => _driverPosition = point);
-      _mapController.move(point, 15);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _mapController.move(point, 15);
+      });
     }, onError: (Object e) {
       if (mounted) setState(() => _message = 'Live driver location unavailable: $e');
     });
@@ -236,7 +238,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
           'online': false,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
         }).eq('driver_id', userId!);
-        if (mounted) setState(() { _online = false; _message = 'You are offline.'; });
+        if (mounted) setState(() { _online = false; _sharing = false; _message = 'You are offline.'; });
       } catch (e) {
         if (mounted) setState(() => _message = 'Could not go offline: $e');
       }
@@ -446,7 +448,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
                     if (pickup != null) Marker(point: pickup, width: 42, height: 42,
                       child: const Icon(Icons.location_on, color: Colors.green, size: 38)),
                     Marker(point: _driverPosition!, width: 42, height: 42,
-                      child: const Icon(Icons.directions_car, color: Colors.blue, size: 38)),
+                      child: Icon(_myRequest?['vehicle_type'] == 'bike' ? Icons.two_wheeler : Icons.directions_car, color: Colors.blue, size: 38)),
                   ]),
                 ],
               )),
