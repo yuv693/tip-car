@@ -7,7 +7,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/taxi_route_service.dart';
 import '../services/push_notification_service.dart';
-import 'driver_kyc_screen.dart';
 
 class InstantTaxiScreen extends StatefulWidget {
   final bool configured;
@@ -32,7 +31,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   String _message = '';
   bool _online = false;
   bool _sharing = false;
-  bool _kycApproved = false;
   bool _busy = false;
   Map<String, dynamic>? _myRequest;
   Map<String, dynamic>? _activeRequest;
@@ -64,11 +62,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
       if (!mounted) return;
       setState(() => _role = row['role']?.toString() ?? 'passenger');
       if (_role == 'driver') {
-        try {
-          final kyc = await db.from('driver_kyc').select('verification_status')
-              .eq('driver_id', userId!).maybeSingle();
-          _kycApproved = kyc?['verification_status'] == 'approved';
-        } catch (_) {}
         await TipCarPushService.initialize();
         await _loadPresence();
         _watchDriverRequests();
@@ -252,18 +245,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
 
   Future<void> _setOnline(bool value) async {
     if (value) {
-      try {
-        final kyc = await db.from('driver_kyc').select('verification_status')
-            .eq('driver_id', userId!).maybeSingle();
-        if (kyc?['verification_status'] != 'approved') {
-          if (mounted) setState(() => _message = 'Driver KYC approval is required before going online.');
-          return;
-        }
-        _kycApproved = true;
-      } catch (_) {
-        if (mounted) setState(() => _message = 'Complete Driver KYC verification before going online.');
-        return;
-      }
       if (_vehicleName.text.trim().isEmpty ||
           _vehicleNumber.text.trim().isEmpty) {
         setState(() => _message = 'Enter vehicle name and registration number first.');
@@ -553,16 +534,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
             const Text('Go online to receive nearby requests',
               style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverKycScreen())),
-              icon: const Icon(Icons.verified_user_outlined),
-              label: const Text('Driver KYC · Upload Licence / RC / Insurance'),
-            ),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverKycScreen())),
-              icon: const Icon(Icons.verified_user_outlined),
-              label: const Text('Driver KYC · Upload Licence / RC / Insurance'),
-            ),
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'bike', label: Text('Bike'), icon: Icon(Icons.two_wheeler)),
@@ -581,7 +552,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(_online ? 'You are online' : 'You are offline'),
-              subtitle: Text(!_kycApproved ? 'KYC approval required before you can receive rides.' : _sharing ? 'GPS is sharing your live location; matching requests are enabled.' : 'Only matching Bike or Car requests within 8 km are shown.'),
+              subtitle: Text(_sharing ? 'GPS is sharing your live location; matching requests are enabled.' : 'Only matching Bike or Car requests within 8 km are shown.'),
               value: _online,
               onChanged: _busy ? null : _setOnline,
             ),
