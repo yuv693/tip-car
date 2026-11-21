@@ -1,0 +1,517 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+class InstantTaxiScreen extends StatefulWidget {
+  final bool configured;
+  const InstantTaxiScreen({super.key, required this.configured});
+
+  @override
+  State<InstantTaxiScreen> createState() => _InstantTaxiScreenState();
+}
+
+class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
+  final _pickup = TextEditingController(text: 'My current location');
+  final _destination = TextEditingController();
+  final _vehicleName = TextEditingController();
+  final _vehicleNumber = TextEditingController();
+  final _mapController = MapController();
+
+  SupabaseClient get db => Supabase.instance.client;
+  String? get userId => db.auth.currentUser?.id;
+
+  String _role = 'passenger';
+  String _vehicleType = 'bike';
+  String _message = '';
+  bool _loading = false;
+  bool _online = false;
+  bool _sharing = false;
+  bool _busy = false;
+  Map<String, dynamic>? _myRequest;
+  Map<String, dynamic>? _activeRequest;
+  List<Map<String, dynamic>> _incoming = [];
+  LatLng? _myPosition;
+  LatLng? _driverPosition;
+  StreamSubscription<Position>? _gps;
+  StreamSubscription<List<Map<String, dynamic>>>? _requestStream;
+  StreamSubscription<List<Map<String, dynamic>>>? _locationStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    if (!widget.configured || userId == null) return;
+    try {
+      final row = await db.from('profiles').select('role')
+          .eq('id', userId!).single();
+      if (!mounted) return;
+      setState(() => _role = row['role']?.toString() ?? 'passenger');
+      if (_role == 'driver') {
+        await _loadPresence();
+        _watchDriverRequests();
+      } else {
+        _watchPassengerRequests();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Profile load failed: $e');
+    }
+  }
+
+  Future<void> _loadPresence() async {
+    try {
+      final row = await db.from('driver_presence').select()
+          .eq('driver_id', userId!).maybeSingle();
+      if (row == null || !mounted) return;
+      setState(() {
+        _vehicleType = row['vehicle_type']?.toString() ?? 'bike';
+        _vehicleName.text = row['vehicle_name']?.toString() ?? '';
+        _vehicleNumber.text = row['vehicle_number']?.toString() ?? '';
+        final fresh = DateTime.tryParse(row['updated_at']?.toString() ?? '');
+        _online = row['online'] == true &&
+            fresh != null &&
+            DateTime.now().toUtc().difference(fresh.toUtc()) <
+                const Duration(seconds: 90);
+      });
+      if (_online) {
+        await _startGps();
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not load driver availability: $e');
+    }
+  }
+
+  Future<Position> _currentPosition() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      throw Exception('Turn on GPS to continue.');
+    }
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw Exception('Allow Tip Car location permission in Android settings.');
+    }
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 20),
+      ),
+    );
+  }
+
+  Future<void> _requestTaxi() async {
+    if (userId == null) return;
+    if (_destination.text.trim().isEmpty) {
+      setState(() => _message = 'Enter your destination first.');
+      return;
+    }
+    setState(() { _busy = true; _message = ''; });
+    try {
+      final p = await _currentPosition();
+      final point = LatLng(p.latitude, p.longitude);
+      final row = await db.from('ride_requests').insert({
+        'passenger_id': userId,
+        'vehicle_type': _vehicleType,
+        'pickup_label': _pickup.text.trim().isEmpty
+            ? 'Current location' : _pickup.text.trim(),
+        'destination_label': _destination.text.trim(),
+        'pickup_latitude': p.latitude,
+        'pickup_longitude': p.longitude,
+      }).select().single();
+      if (!mounted) return;
+      setState(() {
+        _myPosition = point;
+        _myRequest = Map<String, dynamic>.from(row);
+        _message = 'Ride request sent. Nearby $_vehicleType drivers can now see it.';
+      });
+      _watchRequestLocation(row['id'].toString());
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not request a ride: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _watchPassengerRequests() {
+    _requestStream?.cancel();
+    _requestStream = db.from('ride_requests').stream(primaryKey: ['id'])
+        .eq('passenger_id', userId!).listen((rows) {
+      if (!mounted) return;
+      rows.sort((a, b) => (b['created_at'] ?? '').toString()
+          .compareTo((a['created_at'] ?? '').toString()));
+      final active = rows.where((r) => !['completed','cancelled','expired']
+          .contains(r['status'])).toList();
+      setState(() => _myRequest = active.isEmpty ? null : active.first);
+      final id = _myRequest?['id']?.toString();
+      if (id != null) _watchRequestLocation(id);
+    }, onError: (Object e) {
+      if (mounted) setState(() => _message = 'Ride updates unavailable: $e');
+    });
+  }
+
+  void _watchRequestLocation(String requestId) {
+    if (_locationStream != null &&
+        _myRequest?['id']?.toString() == requestId) return;
+    _locationStream?.cancel();
+    _locationStream = db.from('ride_request_locations')
+        .stream(primaryKey: ['request_id'])
+        .eq('request_id', requestId).listen((rows) {
+      if (rows.isEmpty || !mounted) return;
+      final row = rows.first;
+      final point = LatLng(
+        (row['latitude'] as num).toDouble(),
+        (row['longitude'] as num).toDouble(),
+      );
+      setState(() => _driverPosition = point);
+      _mapController.move(point, 15);
+    }, onError: (Object e) {
+      if (mounted) setState(() => _message = 'Live driver location unavailable: $e');
+    });
+  }
+
+  void _watchDriverRequests() {
+    _requestStream?.cancel();
+    _requestStream = db.from('ride_requests').stream(primaryKey: ['id'])
+        .order('created_at', ascending: false).listen((rows) {
+      if (!mounted) return;
+      final visible = rows.map((r) => Map<String, dynamic>.from(r)).toList();
+      setState(() {
+        _incoming = visible.where((r) => r['status'] == 'searching' &&
+            r['driver_id'] == null).toList();
+        final active = visible.where((r) => r['driver_id'] == userId &&
+            ['accepted','arrived','in_progress'].contains(r['status'])).toList();
+        _activeRequest = active.isEmpty ? null : active.first;
+      });
+    }, onError: (Object e) {
+      if (mounted) setState(() => _message = 'Incoming ride updates unavailable: $e');
+    });
+  }
+
+  Future<void> _setOnline(bool value) async {
+    if (value) {
+      if (_vehicleName.text.trim().isEmpty ||
+          _vehicleNumber.text.trim().isEmpty) {
+        setState(() => _message = 'Enter vehicle name and registration number first.');
+        return;
+      }
+      setState(() { _busy = true; _message = ''; });
+      try {
+        final p = await _currentPosition();
+        await db.from('driver_presence').upsert({
+          'driver_id': userId,
+          'vehicle_type': _vehicleType,
+          'vehicle_name': _vehicleName.text.trim(),
+          'vehicle_number': _vehicleNumber.text.trim().toUpperCase(),
+          'online': true,
+          'latitude': p.latitude,
+          'longitude': p.longitude,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }, onConflict: 'driver_id');
+        if (!mounted) return;
+        setState(() { _online = true; _myPosition = LatLng(p.latitude, p.longitude); });
+        await _startGps();
+        if (mounted) setState(() => _message = 'You are online. Nearby matching $_vehicleType requests will appear here.');
+      } catch (e) {
+        if (mounted) setState(() => _message = 'Could not go online: $e');
+      } finally {
+        if (mounted) setState(() => _busy = false);
+      }
+    } else {
+      try {
+        if (_activeRequest != null) {
+          setState(() => _message = 'Complete or cancel your active ride before going offline.');
+          return;
+        }
+        await _gps?.cancel();
+        _gps = null;
+        await db.from('driver_presence').update({
+          'online': false,
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('driver_id', userId!);
+        if (mounted) setState(() { _online = false; _message = 'You are offline.'; });
+      } catch (e) {
+        if (mounted) setState(() => _message = 'Could not go offline: $e');
+      }
+    }
+  }
+
+  Future<void> _startGps() async {
+    await _gps?.cancel();
+    _gps = Geolocator.getPositionStream(locationSettings: AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 15,
+      intervalDuration: const Duration(seconds: 10),
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationTitle: 'Tip Car driver online',
+        notificationText: 'Tip Car is sharing your location while you are online.',
+        notificationChannelName: 'Tip Car driver availability',
+        enableWakeLock: true,
+        setOngoing: true,
+      ),
+    )).listen((p) {
+      _updateDriverPosition(p).catchError((Object e) {
+        if (mounted) setState(() => _message = 'GPS update failed: $e');
+      });
+    }, onError: (Object e) {
+      if (mounted) setState(() => _message = 'GPS stopped: $e');
+    });
+    if (mounted) setState(() => _sharing = true);
+  }
+
+  Future<void> _updateDriverPosition(Position p) async {
+    final point = LatLng(p.latitude, p.longitude);
+    await db.from('driver_presence').update({
+      'latitude': p.latitude,
+      'longitude': p.longitude,
+      'online': true,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('driver_id', userId!);
+    final active = _activeRequest;
+    if (active != null) {
+      await db.from('ride_request_locations').upsert({
+        'request_id': active['id'],
+        'driver_id': userId,
+        'latitude': p.latitude,
+        'longitude': p.longitude,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'request_id');
+    }
+    if (!mounted) return;
+    setState(() => _myPosition = point);
+  }
+
+  Future<void> _accept(Map<String, dynamic> request) async {
+    setState(() { _busy = true; _message = ''; });
+    try {
+      final result = await db.from('ride_requests').update({
+        'driver_id': userId,
+        'status': 'accepted',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', request['id']).eq('status', 'searching')
+          .select().maybeSingle();
+      if (!mounted) return;
+      setState(() => _message = result == null
+          ? 'Another driver already accepted this request.'
+          : 'Ride accepted. Navigate to the passenger pickup point.');
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Accept failed: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _advanceRide() async {
+    final active = _activeRequest;
+    if (active == null) return;
+    final current = active['status']?.toString();
+    final next = current == 'accepted' ? 'arrived'
+        : current == 'arrived' ? 'in_progress'
+        : current == 'in_progress' ? 'completed' : null;
+    if (next == null) return;
+    try {
+      final result = await db.from('ride_requests').update({
+        'status': next,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', active['id']).eq('driver_id', userId!)
+          .select().maybeSingle();
+      if (!mounted) return;
+      setState(() => _message = result == null
+          ? 'Ride status could not be updated.'
+          : 'Ride status: $next');
+      if (next == 'completed') {
+        await db.from('ride_request_locations')
+            .delete().eq('request_id', active['id']);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Ride update failed: $e');
+    }
+  }
+
+  Future<void> _cancelRequest() async {
+    final request = _myRequest;
+    if (request == null) return;
+    try {
+      await db.from('ride_requests').update({
+        'status': 'cancelled',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', request['id']).eq('passenger_id', userId!);
+      if (mounted) setState(() => _message = 'Ride request cancelled.');
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not cancel request: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _gps?.cancel();
+    _requestStream?.cancel();
+    _locationStream?.cancel();
+    _pickup.dispose();
+    _destination.dispose();
+    _vehicleName.dispose();
+    _vehicleNumber.dispose();
+    super.dispose();
+  }
+
+  Widget _statusCard(Map<String, dynamic> request) {
+    final status = request['status']?.toString() ?? 'searching';
+    final label = switch (status) {
+      'searching' => 'Finding a nearby driver…',
+      'accepted' => 'Driver accepted your ride',
+      'arrived' => 'Driver has arrived at pickup',
+      'in_progress' => 'Your ride is in progress',
+      'completed' => 'Ride completed',
+      'cancelled' => 'Ride cancelled',
+      _ => status,
+    };
+    return Card(child: Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        const SizedBox(height: 6),
+        Text('${request['pickup_label']} → ${request['destination_label']}'),
+        Text('${request['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : '🚗 Car Taxi'}'),
+        if (status == 'searching' || status == 'accepted')
+          TextButton.icon(onPressed: _cancelRequest,
+            icon: const Icon(Icons.close), label: const Text('Cancel request')),
+        if (_driverPosition != null) Text(
+          'Driver location: ${_driverPosition!.latitude.toStringAsFixed(5)}, ${_driverPosition!.longitude.toStringAsFixed(5)}'),
+      ]),
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.configured) {
+      return const Scaffold(body: Center(child: Text('Tip Car setup is incomplete.')));
+    }
+    if (userId == null) {
+      return const Scaffold(body: Center(child: Text('Please sign in to use Instant Taxi.')));
+    }
+    final isDriver = _role == 'driver';
+    final pickup = _myRequest == null ? _myPosition : LatLng(
+      (_myRequest!['pickup_latitude'] as num).toDouble(),
+      (_myRequest!['pickup_longitude'] as num).toDouble(),
+    );
+    final center = _driverPosition ?? _myPosition ?? pickup ??
+        const LatLng(21.6417, 69.6293);
+    return Scaffold(
+      appBar: AppBar(title: Text(isDriver ? 'Driver · Instant Taxi' : 'Instant Bike / Car Taxi')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (!isDriver) ...[
+            const Text('Book a nearby ride', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'bike', label: Text('Bike'), icon: Icon(Icons.two_wheeler)),
+                ButtonSegment(value: 'car', label: Text('Car'), icon: Icon(Icons.directions_car)),
+              ],
+              selected: {_vehicleType},
+              onSelectionChanged: _myRequest == null
+                  ? (v) => setState(() => _vehicleType = v.first)
+                  : null,
+            ),
+            const SizedBox(height: 10),
+            TextField(controller: _pickup, decoration: const InputDecoration(
+              labelText: 'Pickup', prefixIcon: Icon(Icons.my_location))),
+            TextField(controller: _destination, decoration: const InputDecoration(
+              labelText: 'Destination', prefixIcon: Icon(Icons.flag_outlined))),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _busy || _myRequest != null ? null : _requestTaxi,
+              icon: _busy ? const SizedBox(width: 18, height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.local_taxi),
+              label: Text(_busy ? 'Requesting…' : 'Find nearby driver'),
+            ),
+            if (_myRequest != null) _statusCard(_myRequest!),
+            if (_myRequest != null && _driverPosition != null)
+              SizedBox(height: 260, child: FlutterMap(
+                mapController: _mapController,
+                options: MapOptions(initialCenter: center, initialZoom: 14),
+                children: [
+                  TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.tipcar.app'),
+                  MarkerLayer(markers: [
+                    if (pickup != null) Marker(point: pickup, width: 42, height: 42,
+                      child: const Icon(Icons.location_on, color: Colors.green, size: 38)),
+                    Marker(point: _driverPosition!, width: 42, height: 42,
+                      child: const Icon(Icons.directions_car, color: Colors.blue, size: 38)),
+                  ]),
+                ],
+              )),
+          ] else ...[
+            const Text('Go online to receive nearby requests',
+              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            SegmentedButton<String>(
+              segments: const [
+                ButtonSegment(value: 'bike', label: Text('Bike'), icon: Icon(Icons.two_wheeler)),
+                ButtonSegment(value: 'car', label: Text('Car'), icon: Icon(Icons.directions_car)),
+              ],
+              selected: {_vehicleType},
+              onSelectionChanged: _online || _activeRequest != null
+                  ? null : (v) => setState(() => _vehicleType = v.first),
+            ),
+            TextField(controller: _vehicleName,
+              decoration: const InputDecoration(labelText: 'Vehicle name / model')),
+            TextField(controller: _vehicleNumber,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(labelText: 'Vehicle registration number')),
+            const SizedBox(height: 10),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(_online ? 'You are online' : 'You are offline'),
+              subtitle: const Text('Only matching Bike or Car requests within 8 km are shown.'),
+              value: _online,
+              onChanged: _busy ? null : _setOnline,
+            ),
+            if (_activeRequest != null) ...[
+              Card(child: Padding(padding: const EdgeInsets.all(14), child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Current ride', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+                  Text('${_activeRequest!['pickup_label']} → ${_activeRequest!['destination_label']}'),
+                  Text('Status: ${_activeRequest!['status']}'),
+                  const SizedBox(height: 8),
+                  FilledButton(onPressed: _advanceRide, child: Text(
+                    _activeRequest!['status'] == 'accepted' ? 'I have arrived'
+                    : _activeRequest!['status'] == 'arrived' ? 'Start ride'
+                    : 'Complete ride')),
+                ],
+              ))),
+            ],
+            const SizedBox(height: 12),
+            const Text('Nearby ride requests', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+            if (!_online) const Text('Go online to see requests.'),
+            if (_online && _incoming.isEmpty) const Text('Waiting for nearby passengers…'),
+            ..._incoming.map((r) => Card(child: ListTile(
+              leading: Icon(r['vehicle_type'] == 'bike' ? Icons.two_wheeler : Icons.directions_car),
+              title: Text('${r['pickup_label']} → ${r['destination_label']}'),
+              subtitle: const Text('Within your 8 km matching area'),
+              trailing: FilledButton(
+                onPressed: _busy ? null : () => _accept(r),
+                child: const Text('Accept'),
+              ),
+            ))),
+          ],
+          if (_message.isNotEmpty)
+            Padding(padding: const EdgeInsets.only(top: 12),
+              child: Text(_message, style: const TextStyle(color: Colors.blue))),
+          const SizedBox(height: 12),
+          const Text('GPS and mobile data must remain on. Live driver tracking starts after a driver accepts.',
+            style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+        ],
+      ),
+    );
+  }
+}
