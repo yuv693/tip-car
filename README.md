@@ -64,3 +64,17 @@ Do this only for your own verified admin account.
 
 Never put Supabase service-role keys or payment secrets in client apps. Verify drivers, vehicle documents,
 permits and insurance before public launch. Test booking and payment flows before accepting money.
+
+
+## Instant Taxi additions (Nov 2026)
+- Destination lookup uses OpenStreetMap Nominatim; road route geometry, distance and ETA use the public OSRM demo endpoint. These public endpoints are rate-limited and are suitable for development, not a guaranteed production SLA.
+- Indicative estimates: Bike = ₹25 base + ₹8/km + ₹1.20/min; Car = ₹45 base + ₹14/km + ₹1.80/min. These are provisional display estimates only; no payment is collected and final fare policy must be approved before launch.
+- Driver KYC: drivers upload Driving Licence, vehicle RC and insurance to the private `driver-kyc-private` bucket. An admin must review and set `verification_status='approved'` before a driver can go online. Admin review example:
+  ```sql
+  update public.driver_kyc
+  set verification_status='approved', reviewed_by=auth.uid(), reviewed_at=now()
+  where driver_id='DRIVER_PROFILE_UUID';
+  ```
+  Run that only from a trusted admin SQL session after checking originals; never expose KYC files publicly.
+- FCM setup: create an Android app in Firebase, add its `google-services.json` to `mobile/android/app/`, enable Firebase Cloud Messaging, then configure the Supabase Edge Function secret `FCM_SERVICE_ACCOUNT_JSON` with the Firebase service-account JSON. The service account must have Firebase Cloud Messaging send permission. Deploy `supabase/functions/notify-nearby-drivers/index.ts` as `notify-nearby-drivers`. Until Firebase config and the secret are installed, the app keeps Realtime inbox fallback and push is not live.
+- Never commit service-account JSON, private keys, or Firebase Admin credentials to GitHub.
