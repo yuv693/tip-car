@@ -15,6 +15,7 @@ gateway webhook verifies it. Never put service-role keys or payment secrets in c
 1. Create a project at https://supabase.com
 2. Run `supabase/schema.sql` in SQL Editor.
 3. Enable Phone in Authentication > Providers and configure an SMS provider.
+4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080503_enforce_instant_taxi_request_transitions.sql` in filename order.
 4. Copy the project URL and anon/public key.
 
 ### Website
@@ -46,6 +47,7 @@ Do this only for your own verified admin account.
 - Passenger/driver profile roles
 - Publish bike, car and bus rides with route, date, seats and fare (web + Android)
 - Filter ride search by bike, car or bus; bike rides are limited to one passenger and car rides to seven passenger seats
+- Instant Bike/Car Taxi: driver online presence, GPS-based 8 km matching, first-driver acceptance, pickup/arrived/start/complete statuses, and live driver coordinates
 - Search active rides by origin/destination
 - Database-side atomic seat booking
 - Booking history and basic admin overview (web)
@@ -53,7 +55,8 @@ Do this only for your own verified admin account.
 ## Still needs external configuration / production hardening
 - Google Maps, Places autocomplete and live GPS tracking
 - Razorpay/other payment gateway and signed webhook verification
-- Push notifications (FCM) and SMS provider
+- Push notifications (FCM) for incoming requests when the driver app is backgrounded or closed; the current instant request inbox uses an active Realtime connection
+- SMS provider
 - Driver KYC/document upload and manual verification
 - SOS dispatch/contact workflow
 - Cancellation, refund and dispute workflows
