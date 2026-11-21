@@ -28,7 +28,10 @@ jobs:
           cache: true
       - name: Generate Android platform scaffolding
         working-directory: mobile
-        run: flutter create --platforms=android --project-name tip_car .
+        run: |
+          cp android/app/src/main/AndroidManifest.xml /tmp/tip-car-AndroidManifest.xml
+          flutter create --platforms=android --project-name tip_car .
+          cp /tmp/tip-car-AndroidManifest.xml android/app/src/main/AndroidManifest.xml
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
@@ -61,6 +64,6 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: tip-car-debug-apk
-          path: mobile/build/app/outputs/flutter-apk/app-debug.apk
+          name: tip-car-debug-apks
+          path: mobile/build/app/outputs/flutter-apk/app-*-debug.apk
           if-no-files-found: error
