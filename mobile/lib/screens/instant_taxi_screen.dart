@@ -500,8 +500,16 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
               icon: _busy ? const SizedBox(width: 18, height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.local_taxi),
-              label: Text(_busy ? 'Requesting…' : 'Find nearby driver'),
+              label: Text(_busy ? 'Calculating route & requesting…' : 'Calculate route & find driver'),
             ),
+            if (_routeDistanceKm != null) Card(child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Route: ${_routeDistanceKm!.toStringAsFixed(1)} km · ETA ${_routeDurationMinutes!.toStringAsFixed(0)} min'),
+                Text('Estimated fare: ₹${_estimatedFare!.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const Text('Indicative estimate only; final fare rules are not yet locked.', style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+              ]),
+            )),
             if (_myRequest != null) _statusCard(_myRequest!),
             if (_myRequest != null && (_driverPosition != null || _routePoints.isNotEmpty))
               SizedBox(height: 280, child: FlutterMap(
@@ -527,6 +535,11 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
             const Text('Go online to receive nearby requests',
               style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverKycScreen())),
+              icon: const Icon(Icons.verified_user_outlined),
+              label: const Text('Driver KYC · Upload Licence / RC / Insurance'),
+            ),
             OutlinedButton.icon(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverKycScreen())),
               icon: const Icon(Icons.verified_user_outlined),
