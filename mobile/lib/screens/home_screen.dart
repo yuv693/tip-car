@@ -11,6 +11,7 @@ import '../utils/payment_validation.dart';
 
 import 'driver_benefits_screen.dart';
 import 'booking_history_screen.dart';
+import 'instant_taxi_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool configured;
@@ -791,6 +792,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: FilledButton.styleFrom(backgroundColor: const Color(0xffffb02e), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                 onPressed: () { setState(() { selectedRole = 'passenger'; tab = 1; }); search(); },
                 icon: const Icon(Icons.search_rounded), label: const Text('SEARCH RIDES', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: .7)),
+              )),
+              const SizedBox(height: 10),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => InstantTaxiScreen(configured: widget.configured),
+                )),
+                icon: const Icon(Icons.local_taxi_rounded),
+                label: const Text('INSTANT BIKE / CAR TAXI'),
               )),
             ]),
           ),
