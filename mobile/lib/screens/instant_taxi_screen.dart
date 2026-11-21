@@ -5,6 +5,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/taxi_route_service.dart';
+import '../services/push_notification_service.dart';
+import 'driver_kyc_screen.dart';
 
 class InstantTaxiScreen extends StatefulWidget {
   final bool configured;
@@ -35,6 +38,11 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   List<Map<String, dynamic>> _incoming = [];
   LatLng? _myPosition;
   LatLng? _driverPosition;
+  LatLng? _destinationPosition;
+  List<LatLng> _routePoints = [];
+  double? _routeDistanceKm;
+  double? _routeDurationMinutes;
+  double? _estimatedFare;
   DateTime? _lastInboxRefresh;
   StreamSubscription<Position>? _gps;
   Timer? _heartbeat;
@@ -55,6 +63,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
       if (!mounted) return;
       setState(() => _role = row['role']?.toString() ?? 'passenger');
       if (_role == 'driver') {
+        await TipCarPushService.initialize();
         await _loadPresence();
         _watchDriverRequests();
       } else {
@@ -117,23 +126,40 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     setState(() { _busy = true; _message = ''; });
     try {
       final p = await _currentPosition();
-      final point = LatLng(p.latitude, p.longitude);
+      final quote = await TaxiRouteService.estimate(
+        pickupLat: p.latitude, pickupLon: p.longitude,
+        destination: _destination.text.trim(), vehicleType: _vehicleType,
+      );
       final row = await db.from('ride_requests').insert({
         'passenger_id': userId,
         'vehicle_type': _vehicleType,
-        'pickup_label': _pickup.text.trim().isEmpty
-            ? 'Current location' : _pickup.text.trim(),
+        'pickup_label': _pickup.text.trim().isEmpty ? 'Current location' : _pickup.text.trim(),
         'destination_label': _destination.text.trim(),
         'pickup_latitude': p.latitude,
         'pickup_longitude': p.longitude,
+        'destination_latitude': quote.destination.latitude,
+        'destination_longitude': quote.destination.longitude,
+        'route_distance_km': quote.distanceKm,
+        'route_duration_minutes': quote.durationMinutes,
+        'estimated_fare': quote.estimatedFare,
       }).select().single();
       if (!mounted) return;
       setState(() {
-        _myPosition = point;
+        _myPosition = LatLng(p.latitude, p.longitude);
+        _destinationPosition = quote.destination;
+        _routePoints = quote.points;
+        _routeDistanceKm = quote.distanceKm;
+        _routeDurationMinutes = quote.durationMinutes;
+        _estimatedFare = quote.estimatedFare;
         _myRequest = Map<String, dynamic>.from(row);
-        _message = 'Ride request sent. Nearby $_vehicleType drivers can now see it.';
+        _message = 'Route calculated. Ride request sent to nearby drivers.';
       });
       _watchRequestLocation(row['id'].toString());
+      try {
+        await db.functions.invoke('notify-nearby-drivers', body: {'request_id': row['id']});
+      } catch (_) {
+        if (mounted) setState(() => _message = 'Ride request sent. Push notification setup is still pending.');
+      }
     } catch (e) {
       if (mounted) setState(() => _message = 'Could not request a ride: $e');
     } finally {
@@ -419,6 +445,8 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         const SizedBox(height: 6),
         Text('${request['pickup_label']} → ${request['destination_label']}'),
         Text(request['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : '🚗 Car Taxi'),
+        if (request['route_distance_km'] != null) Text('Route: ${request['route_distance_km']} km · ETA ${request['route_duration_minutes']} min'),
+        if (request['estimated_fare'] != null) Text('Estimated fare: ₹${request['estimated_fare']}', style: const TextStyle(fontWeight: FontWeight.w800)),
         if (status == 'searching' || status == 'accepted')
           TextButton.icon(onPressed: _cancelRequest,
             icon: const Icon(Icons.close), label: const Text('Cancel request')),
@@ -475,17 +503,22 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
               label: Text(_busy ? 'Requesting…' : 'Find nearby driver'),
             ),
             if (_myRequest != null) _statusCard(_myRequest!),
-            if (_myRequest != null && _driverPosition != null)
-              SizedBox(height: 260, child: FlutterMap(
+            if (_myRequest != null && (_driverPosition != null || _routePoints.isNotEmpty))
+              SizedBox(height: 280, child: FlutterMap(
                 mapController: _mapController,
-                options: MapOptions(initialCenter: center, initialZoom: 14),
+                options: MapOptions(initialCenter: center, initialZoom: 13),
                 children: [
                   TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.tipcar.app'),
+                  if (_routePoints.length > 1) PolylineLayer(polylines: [
+                    Polyline(points: _routePoints, strokeWidth: 4, color: Colors.blue),
+                  ]),
                   MarkerLayer(markers: [
                     if (pickup != null) Marker(point: pickup, width: 42, height: 42,
                       child: const Icon(Icons.location_on, color: Colors.green, size: 38)),
-                    Marker(point: _driverPosition!, width: 42, height: 42,
+                    if (_destinationPosition != null) Marker(point: _destinationPosition!, width: 42, height: 42,
+                      child: const Icon(Icons.flag, color: Colors.red, size: 34)),
+                    if (_driverPosition != null) Marker(point: _driverPosition!, width: 42, height: 42,
                       child: Icon(_myRequest?['vehicle_type'] == 'bike' ? Icons.two_wheeler : Icons.directions_car, color: Colors.blue, size: 38)),
                   ]),
                 ],
@@ -494,6 +527,11 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
             const Text('Go online to receive nearby requests',
               style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DriverKycScreen())),
+              icon: const Icon(Icons.verified_user_outlined),
+              label: const Text('Driver KYC · Upload Licence / RC / Insurance'),
+            ),
             SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'bike', label: Text('Bike'), icon: Icon(Icons.two_wheeler)),
