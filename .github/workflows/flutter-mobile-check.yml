@@ -44,7 +44,7 @@ jobs:
       - name: Build debug APK connected to TipCarBus
         working-directory: mobile
         run: |
-          flutter build apk --debug \
+          flutter build apk --debug --split-per-abi \
             --dart-define=SUPABASE_URL=https://wrjddfpxhqhpvhdgpres.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=sb_publishable_vn72HbTxOfVmyJD2sRNQzg_UkNpdwsX
       - name: Package Android project
