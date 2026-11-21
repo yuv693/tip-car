@@ -15,7 +15,7 @@ gateway webhook verifies it. Never put service-role keys or payment secrets in c
 1. Create a project at https://supabase.com
 2. Run `supabase/schema.sql` in SQL Editor.
 3. Enable Phone in Authentication > Providers and configure an SMS provider.
-4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080503_enforce_instant_taxi_request_transitions.sql` in filename order.
+4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080912_limit_active_instant_taxi_requests.sql` in filename order.
 4. Copy the project URL and anon/public key.
 
 ### Website
