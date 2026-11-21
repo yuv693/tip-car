@@ -38,6 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> rides = [];
   String message = '';
   String selectedRole = 'passenger';
+  String selectedVehicleType = 'car';
+  String selectedSearchVehicleType = 'all';
   bool loading = false;
   bool photoUploading = false;
   String? avatarUrl;
@@ -440,7 +442,8 @@ class _HomeScreenState extends State<HomeScreen> {
           .ilike('destination', '%${to.text.trim()}%')
           .gte('departure_at', DateTime.now().toUtc().toIso8601String())
           .order('departure_at');
-      final rideRows = List<Map<String, dynamic>>.from(result);
+      final rideRows = List<Map<String, dynamic>>.from(result).where((ride) =>
+          selectedSearchVehicleType == 'all' || ride['vehicle_type'] == selectedSearchVehicleType).toList();
       final driverIds = rideRows.map((ride) => ride['driver_id']?.toString()).whereType<String>().toSet().toList();
       final publicDrivers = driverIds.isEmpty ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(await db!.rpc('search_driver_public_profiles', params: {'p_driver_ids': driverIds}));
       final driversById = {for (final driver in publicDrivers) driver['id'].toString(): driver};
@@ -466,7 +469,8 @@ class _HomeScreenState extends State<HomeScreen> {
         to.text.trim().isEmpty ||
         totalSeats == null ||
         totalSeats < 1 ||
-        totalSeats > 60 ||
+        totalSeats > (selectedVehicleType == 'bike' ? 1 : selectedVehicleType == 'car' ? 7 : 60) ||
+        (selectedVehicleType == 'bike' && totalSeats != 1) ||
         farePerSeat == null ||
         farePerSeat < 0) {
       setState(() => message = 'Check vehicle, route, seat and fare details.');
@@ -486,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
       await db!.from('rides').insert({
         'driver_id': db!.auth.currentUser!.id,
-        'vehicle_type': 'car',
+        'vehicle_type': selectedVehicleType,
         'vehicle_name': vehicle.text.trim(),
         'vehicle_number': number.text.trim(),
         'origin': from.text.trim(),
@@ -1017,6 +1021,20 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: const InputDecoration(labelText: 'To'),
         ),
         const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: selectedSearchVehicleType,
+          decoration: const InputDecoration(labelText: 'Vehicle type'),
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text('All rides')),
+            DropdownMenuItem(value: 'bike', child: Text('Bike Taxi')),
+            DropdownMenuItem(value: 'car', child: Text('Car Taxi')),
+            DropdownMenuItem(value: 'bus', child: Text('Bus')),
+          ],
+          onChanged: (value) {
+            if (value != null) setState(() => selectedSearchVehicleType = value);
+          },
+        ),
+        const SizedBox(height: 8),
         FilledButton(
           onPressed: loading ? null : search,
           child: const Text('Search rides'),
@@ -1029,7 +1047,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return Card(margin: const EdgeInsets.only(top: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${ride['origin']} → ${ride['destination']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 7),
-            Text('${ride['vehicle_name']} · ${ride['vehicle_number']}'),
+            Text('${ride['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : ride['vehicle_type'] == 'car' ? '🚗 Car Taxi' : '🚌 Bus'} · ${ride['vehicle_name']} · ${ride['vehicle_number']}'),
             Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
             Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
             const Divider(height: 20),
@@ -1041,6 +1059,23 @@ class _HomeScreenState extends State<HomeScreen> {
       ];
 
   List<Widget> _buildPublishRide() => [
+        DropdownButtonFormField<String>(
+          value: selectedVehicleType,
+          decoration: const InputDecoration(labelText: 'Vehicle category'),
+          items: const [
+            DropdownMenuItem(value: 'bike', child: Text('Bike Taxi (1 passenger)')),
+            DropdownMenuItem(value: 'car', child: Text('Car Taxi (up to 7 passengers)')),
+            DropdownMenuItem(value: 'bus', child: Text('Bus (up to 60 passengers)')),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            setState(() {
+              selectedVehicleType = value;
+              seats.text = value == 'bike' ? '1' : value == 'car' ? '3' : '20';
+            });
+          },
+        ),
+        const SizedBox(height: 10),
         TextField(
           controller: vehicle,
           decoration: const InputDecoration(labelText: 'Vehicle name'),
@@ -1057,7 +1092,8 @@ class _HomeScreenState extends State<HomeScreen> {
         TextField(
           controller: seats,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Total seats'),
+          decoration: InputDecoration(labelText: selectedVehicleType == 'bike' ? 'Passenger seats (fixed at 1)' : selectedVehicleType == 'car' ? 'Passenger seats (1–7)' : 'Passenger seats (1–60)'),
+          readOnly: selectedVehicleType == 'bike',
         ),
         ListTile(
           title: Text(
