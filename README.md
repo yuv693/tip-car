@@ -44,7 +44,8 @@ Do this only for your own verified admin account.
 ## Included foundation
 - Phone OTP sign-in through Supabase Auth
 - Passenger/driver profile roles
-- Publish car/bus rides with route, date, seats and fare (web)
+- Publish bike, car and bus rides with route, date, seats and fare (web + Android)
+- Filter ride search by bike, car or bus; bike rides are limited to one passenger and car rides to seven passenger seats
 - Search active rides by origin/destination
 - Database-side atomic seat booking
 - Booking history and basic admin overview (web)
