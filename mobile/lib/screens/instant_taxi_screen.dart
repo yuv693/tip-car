@@ -37,6 +37,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   LatLng? _driverPosition;
   DateTime? _lastInboxRefresh;
   StreamSubscription<Position>? _gps;
+  Timer? _heartbeat;
   StreamSubscription<List<Map<String, dynamic>>>? _requestStream;
   StreamSubscription<List<Map<String, dynamic>>>? _locationStream;
 
@@ -254,6 +255,8 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         }
         await _gps?.cancel();
         _gps = null;
+        _heartbeat?.cancel();
+        _heartbeat = null;
         await db.from('driver_presence').update({
           'online': false,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -288,6 +291,17 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
       }
     });
     if (mounted) setState(() => _sharing = true);
+    _heartbeat?.cancel();
+    _heartbeat = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!_online || !_sharing || userId == null) return;
+      try {
+        await db.from('driver_presence').update({
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('driver_id', userId!);
+      } catch (e) {
+        if (mounted) setState(() => _message = 'Driver availability heartbeat failed: $e');
+      }
+    });
   }
 
   Future<void> _updateDriverPosition(Position p) async {
@@ -377,6 +391,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   @override
   void dispose() {
     _gps?.cancel();
+    _heartbeat?.cancel();
     _requestStream?.cancel();
     _locationStream?.cancel();
     _pickup.dispose();
