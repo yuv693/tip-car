@@ -15,7 +15,7 @@ gateway webhook verifies it. Never put service-role keys or payment secrets in c
 1. Create a project at https://supabase.com
 2. Run `supabase/schema.sql` in SQL Editor.
 3. Enable Phone in Authentication > Providers and configure an SMS provider.
-4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080900_limit_active_instant_taxi_requests.sql`, then apply `20261121090000_route_fare_kyc_fcm.sql` and `20261121091000_require_approved_kyc_for_online.sql` in filename order.
+4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080900_limit_active_instant_taxi_requests.sql`, then apply `20261121090000_route_fare_kyc_fcm.sql` and `20261121100000_remove_driver_kyc_gate.sql` in filename order.
 5. Copy the project URL and anon/public key.
 
 ### Website
@@ -57,13 +57,11 @@ Do this only for your own verified admin account.
 - Razorpay/other payment gateway and signed webhook verification
 - Push notifications (FCM) for incoming requests when the driver app is backgrounded or closed; the current instant request inbox uses an active Realtime connection
 - SMS provider
-- Driver KYC/document upload and manual verification
 - SOS dispatch/contact workflow
 - Cancellation, refund and dispute workflows
 - Legal review, rate limiting, audit logs, monitoring, backups, security testing and Play Store signing
 
-Never put Supabase service-role keys or payment secrets in client apps. Verify drivers, vehicle documents,
-permits and insurance before public launch. Test booking and payment flows before accepting money.
+Never put Supabase service-role keys or payment secrets in client apps. Test booking and payment flows before accepting money.
 
 
 ## Instant Taxi additions (Nov 2026)
