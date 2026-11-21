@@ -5,7 +5,7 @@ do $$ begin
   create type public.app_role as enum ('passenger','driver','admin');
 exception when duplicate_object then null; end $$;
 do $$ begin
-  create type public.vehicle_type as enum ('car','bus');
+  create type public.vehicle_type as enum ('bike','car','bus');
 exception when duplicate_object then null; end $$;
 do $$ begin
   create type public.ride_status as enum ('active','full','cancelled','completed');
