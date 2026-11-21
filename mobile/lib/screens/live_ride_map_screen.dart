@@ -26,6 +26,7 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   double? _pickupKm, _pickupMin, _tripKm, _tripMin;
   DateTime? _lastRoute;
   String _origin = 'Pickup', _dest = 'Destination', _message = '';
+  String _vehicleType = 'car';
   bool _sharing = false, _busy = false, _loading = true;
   SupabaseClient get db => Supabase.instance.client;
 
@@ -52,10 +53,11 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
 
   Future<void> _loadRide() async {
     try {
-      final ride = await db.from('rides').select('origin,destination')
+      final ride = await db.from('rides').select('origin,destination,vehicle_type')
           .eq('id', widget.rideId).single();
       _origin = ride['origin']?.toString() ?? 'Pickup';
       _dest = ride['destination']?.toString() ?? 'Destination';
+      _vehicleType = ride['vehicle_type']?.toString() ?? 'car';
       final points = await Future.wait([_geocode(_origin), _geocode(_dest)]);
       if (!mounted) return;
       setState(() { _pickup = points[0]; _destination = points[1]; _loading = false; });
@@ -175,7 +177,7 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
   Widget build(BuildContext context) {
     final markers = <Marker>[
       if (_driver != null) Marker(point: _driver!, width: 50, height: 50,
-        child: const Icon(Icons.directions_car_filled, size: 42, color: Color(0xff246bfe))),
+        child: Icon(_vehicleType == 'bike' ? Icons.two_wheeler : Icons.directions_car_filled, size: 42, color: const Color(0xff246bfe))),
       if (_pickup != null) Marker(point: _pickup!, width: 42, height: 42,
         child: const Icon(Icons.location_on, size: 40, color: Colors.green)),
       if (_destination != null) Marker(point: _destination!, width: 42, height: 42,
