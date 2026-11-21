@@ -27,7 +27,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   String _role = 'passenger';
   String _vehicleType = 'bike';
   String _message = '';
-  bool _loading = false;
   bool _online = false;
   bool _sharing = false;
   bool _busy = false;
@@ -151,7 +150,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
           .contains(r['status'])).toList();
       setState(() => _myRequest = active.isEmpty ? null : active.first);
       final id = _myRequest?['id']?.toString();
-      if (id != null) _watchRequestLocation(id);
+      if (id != null) {
+        _watchRequestLocation(id);
+      }
     }, onError: (Object e) {
       if (mounted) setState(() => _message = 'Ride updates unavailable: $e');
     });
@@ -263,7 +264,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         if (mounted) setState(() => _message = 'GPS update failed: $e');
       });
     }, onError: (Object e) {
-      if (mounted) setState(() => _message = 'GPS stopped: $e');
+      if (mounted) {
+        setState(() { _sharing = false; _message = 'GPS stopped: $e'; });
+      }
     });
     if (mounted) setState(() => _sharing = true);
   }
@@ -380,7 +383,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         const SizedBox(height: 6),
         Text('${request['pickup_label']} → ${request['destination_label']}'),
-        Text('${request['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : '🚗 Car Taxi'}'),
+        Text(request['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : '🚗 Car Taxi'),
         if (status == 'searching' || status == 'accepted')
           TextButton.icon(onPressed: _cancelRequest,
             icon: const Icon(Icons.close), label: const Text('Cancel request')),
@@ -474,7 +477,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(_online ? 'You are online' : 'You are offline'),
-              subtitle: const Text('Only matching Bike or Car requests within 8 km are shown.'),
+              subtitle: Text(_sharing ? 'GPS is sharing your live location; matching requests are enabled.' : 'Only matching Bike or Car requests within 8 km are shown.'),
               value: _online,
               onChanged: _busy ? null : _setOnline,
             ),
