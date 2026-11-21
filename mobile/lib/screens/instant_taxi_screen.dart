@@ -35,6 +35,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   List<Map<String, dynamic>> _incoming = [];
   LatLng? _myPosition;
   LatLng? _driverPosition;
+  DateTime? _lastInboxRefresh;
   StreamSubscription<Position>? _gps;
   StreamSubscription<List<Map<String, dynamic>>>? _requestStream;
   StreamSubscription<List<Map<String, dynamic>>>? _locationStream;
@@ -180,6 +181,24 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     });
   }
 
+  Future<void> _refreshDriverRequests({bool force = false}) async {
+    final now = DateTime.now();
+    if (!force && _lastInboxRefresh != null &&
+        now.difference(_lastInboxRefresh!) < const Duration(seconds: 15)) {
+      return;
+    }
+    _lastInboxRefresh = now;
+    try {
+      final rows = await db.from('ride_requests').select()
+          .eq('status', 'searching').order('created_at', ascending: false);
+      if (!mounted) return;
+      setState(() => _incoming = List<Map<String, dynamic>>.from(rows)
+          .where((r) => r['driver_id'] == null).toList());
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not refresh nearby requests: $e');
+    }
+  }
+
   void _watchDriverRequests() {
     _requestStream?.cancel();
     _requestStream = db.from('ride_requests').stream(primaryKey: ['id'])
@@ -291,6 +310,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     }
     if (!mounted) return;
     setState(() => _myPosition = point);
+    if (_incoming.isEmpty) await _refreshDriverRequests();
   }
 
   Future<void> _accept(Map<String, dynamic> request) async {
