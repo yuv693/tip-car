@@ -33,3 +33,8 @@ Android login uses Supabase Anonymous Sign-Ins. The user enters a name and mobil
 ## Security
 
 The Supabase publishable/anon key may be included in a client app. Database access must be enforced by Row Level Security and ownership checks. Never place passwords, database credentials, service-role keys, Firebase Admin private keys, or payment secrets in the app.
+
+
+## Free map setup (no paid API key)
+
+The starter app uses OpenStreetMap tiles, Nominatim for destination lookup and the public OSRM demo for road route geometry, distance and ETA. No Google Maps API key, billing account or credit card is needed. Address results and route quotes are cached in memory for the current app session; uncached Nominatim requests are spaced by at least 1.1 seconds. The map displays © OpenStreetMap contributors attribution. These are shared community/demo services, not unlimited commercial infrastructure and not covered by an uptime guarantee. Keep request volume modest, preserve attribution, and do not run bulk/background geocoding. If usage grows, self-host or choose a provider whose terms and capacity fit Tip Car traffic.
