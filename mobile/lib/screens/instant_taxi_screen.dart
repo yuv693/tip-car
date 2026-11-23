@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/taxi_route_service.dart';
 import '../services/push_notification_service.dart';
+import 'alternative_ride_screen.dart';
 
 class InstantTaxiScreen extends StatefulWidget {
   final bool configured;
@@ -510,6 +511,19 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
               ]),
             )),
             if (_myRequest != null) _statusCard(_myRequest!),
+            if (_myRequest != null && _myRequest!['status'] == 'searching')
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => AlternativeRideScreen(
+                    pickup: _pickup.text.trim(),
+                    destination: _destination.text.trim().isNotEmpty
+                        ? _destination.text.trim()
+                        : (_myRequest!['destination_label'] ?? '').toString(),
+                  ),
+                )),
+                icon: const Icon(Icons.alt_route),
+                label: const Text('Find an alternative scheduled ride'),
+              ),
             if (_myRequest != null && (_driverPosition != null || _routePoints.isNotEmpty))
               SizedBox(height: 280, child: FlutterMap(
                 mapController: _mapController,
