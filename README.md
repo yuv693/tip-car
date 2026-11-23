@@ -77,7 +77,7 @@ Never put Supabase service-role keys or payment secrets in client apps. Test boo
 
 ## Safety and production-readiness notes
 - The Android app includes an SOS screen: users can call India's emergency number 112, save an optional emergency contact, and open an SMS draft containing their current map location. The user must review/send the SMS; Tip Car does not silently message or dispatch emergency services.
-- Apply migrations `20261123130000_add_emergency_contact.sql` and `20261123140000_allow_driver_cancel_before_start.sql` in filename order before using SOS contact storage and assigned-driver cancellation.
+- Apply migrations `20261123130000_add_emergency_contact.sql` and `20261123140000_allow_driver_cancel_before_start.sql`, and `20261123150000_fix_driver_cancel_transition_order.sql` in filename order before using SOS contact storage and assigned-driver cancellation.
 - Map screens currently use OpenStreetMap tiles with Nominatim place lookup and the public OSRM routing demo. This is a development setup, not a Google Maps integration or production availability guarantee. A production map/routing provider and usage terms must be selected before public scale.
 - Scheduled booking cancellation and instant taxi passenger cancellation are available. A formal refund workflow is not active because Tip Car does not collect payments.
 - Alternative scheduled-ride fallback is passenger-selected and atomic with cancellation of the still-searching instant taxi request. It is not an automatic guaranteed dispatch service.
