@@ -138,6 +138,7 @@ class _SosScreenState extends State<SosScreen> {
         TextField(
           controller: _contact,
           keyboardType: TextInputType.phone,
+          onChanged: (_) => setState(() {}),
           decoration: const InputDecoration(
             labelText: 'Contact mobile number',
             hintText: '98765 43210',
