@@ -208,27 +208,43 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _ensureProfile(dynamic user) async {
     final metadata = user.userMetadata as Map<String, dynamic>? ?? {};
-    final metadataRole = metadata['role'];
-    final role = metadataRole == 'driver' ? 'driver' : selectedRole;
-    final fullName = name.text.trim().isNotEmpty
-        ? name.text.trim()
-        : (metadata['full_name'] as String? ?? '');
-    final profile = <String, dynamic>{
-      'id': user.id,
-      'full_name': fullName,
-      'role': role,
-    };
-    final phoneNumber = user.phone as String?;
-    if (phoneNumber != null && phoneNumber.isNotEmpty) {
-      profile['phone'] = phoneNumber;
-    }
+    final existing = await db!.from('profiles')
+        .select('full_name, role')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    // Do not overwrite an existing driver's role every time they sign in.
+    final existingName = existing?['full_name']?.toString() ?? '';
+    final existingRole = existing?['role']?.toString();
+    final metadataRole = metadata['role']?.toString();
+    final role = existingRole ??
+        (metadataRole == 'driver' ? 'driver' : selectedRole);
+    final enteredName = name.text.trim();
+    final metadataName = metadata['full_name']?.toString() ?? '';
+    final fullName = enteredName.isNotEmpty
+        ? enteredName
+        : (existingName.isNotEmpty ? existingName : metadataName);
+
+    // Auth's phone is the verified number. Persist it in the app profile too,
+    // while preserving an existing passenger/driver role on repeat logins.
+    final verifiedPhone = (user.phone as String?)?.trim();
+    final savedPhone = (verifiedPhone?.isNotEmpty ?? false)
+        ? verifiedPhone!
+        : phone.text.trim();
+
     await db!.from('profiles').upsert(
-      profile,
+      <String, dynamic>{
+        'id': user.id,
+        'full_name': fullName,
+        'phone': savedPhone,
+        'role': role,
+      },
       onConflict: 'id',
-      ignoreDuplicates: true,
     );
+    if (mounted) {
+      phone.text = savedPhone;
+      if (fullName.isNotEmpty) name.text = fullName;
+      selectedRole = role;
+    }
   }
 
   Future<void> sendOtp() async {
@@ -268,9 +284,17 @@ class _HomeScreenState extends State<HomeScreen> {
         type: OtpType.sms,
       );
       final user = db!.auth.currentUser;
-      if (user != null) await _ensureProfile(user);
+      if (user == null) throw Exception('Verification succeeded but no login session was created. Please try again.');
+      await _ensureProfile(user);
       await _loadAvatar();
-      if (mounted) setState(() { message = 'Mobile verified. Welcome to Tip Car!'; tab = 0; otpSent = false; otp.clear(); });
+      if (mounted) {
+        setState(() {
+          message = 'Mobile verified. Your number is saved. Welcome to Tip Car!';
+          tab = 0;
+          otpSent = false;
+          otp.clear();
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => message = 'Verification failed: $error');
     } finally {
