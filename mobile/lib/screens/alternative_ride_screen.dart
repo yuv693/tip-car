@@ -93,7 +93,7 @@ class _AlternativeRideScreenState extends State<AlternativeRideScreen> {
     );
     if (confirm != true) return;
     try {
-      final bookingId = await _db.rpc('create_alternative_booking', params: {
+      await _db.rpc('create_alternative_booking', params: {
         'p_ride_id': ride['id'],
         'p_seats': 1,
         'p_request_id': widget.instantRequestId,
