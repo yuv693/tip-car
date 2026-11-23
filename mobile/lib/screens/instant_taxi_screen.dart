@@ -400,6 +400,37 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     }
   }
 
+  Future<void> _cancelAssignedRide() async {
+    final active = _activeRequest;
+    if (active == null) return;
+    final status = active['status']?.toString();
+    if (status != 'accepted' && status != 'arrived') {
+      setState(() => _message = 'A ride already in progress cannot be cancelled here. Contact the passenger and support.');
+      return;
+    }
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel this accepted ride?'),
+        content: const Text('The passenger will see that the driver cancelled. No ride commission is charged for a cancelled ride.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep ride')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Cancel ride')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await db.from('ride_requests').update({
+        'status': 'cancelled',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', active['id']).eq('driver_id', userId!);
+      if (mounted) setState(() => _message = 'Ride cancelled. You can now go offline or receive another request.');
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not cancel assigned ride: $e');
+    }
+  }
+
   Future<void> _cancelRequest() async {
     final request = _myRequest;
     if (request == null) return;
@@ -582,6 +613,12 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
                     _activeRequest!['status'] == 'accepted' ? 'I have arrived'
                     : _activeRequest!['status'] == 'arrived' ? 'Start ride'
                     : 'Complete ride')),
+                  if (_activeRequest!['status'] == 'accepted' || _activeRequest!['status'] == 'arrived')
+                    TextButton.icon(
+                      onPressed: _busy ? null : _cancelAssignedRide,
+                      icon: const Icon(Icons.cancel_outlined, color: Colors.red),
+                      label: const Text('Cancel accepted ride', style: TextStyle(color: Colors.red)),
+                    ),
                 ],
               ))),
             ],
