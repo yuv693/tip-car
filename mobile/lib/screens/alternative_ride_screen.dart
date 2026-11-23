@@ -6,10 +6,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AlternativeRideScreen extends StatefulWidget {
   final String pickup;
   final String destination;
+  final String? instantRequestId;
   const AlternativeRideScreen({
     super.key,
     required this.pickup,
     required this.destination,
+    this.instantRequestId,
   });
 
   @override
@@ -40,7 +42,7 @@ class _AlternativeRideScreenState extends State<AlternativeRideScreen> {
     setState(() { _loading = true; _message = ''; _rides = []; });
     try {
       var query = _db.from('rides').select()
-          .inFilter('status', ['active', 'full'])
+          .eq('status', 'active')
           .ilike('destination', '%${_to.text.trim()}%')
           .gt('available_seats', 0)
           .gte('departure_at', DateTime.now().toUtc().toIso8601String());
@@ -99,6 +101,13 @@ class _AlternativeRideScreenState extends State<AlternativeRideScreen> {
         'p_booking_id': bookingId,
         'p_method': 'cash',
       });
+      final requestId = widget.instantRequestId;
+      if (requestId != null) {
+        await _db.from('ride_requests').update({
+          'status': 'cancelled',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', requestId).eq('passenger_id', user.id).eq('status', 'searching');
+      }
       if (!mounted) return;
       setState(() => _message = 'Alternative ride booking created. Pay the driver directly; the driver must confirm the booking.');
       await _search();
