@@ -56,7 +56,7 @@ Do this only for your own account; the Android mobile number is not OTP-verified
 
 ## Still needs external configuration / production hardening
 - Firebase Android app configuration (`google-services.json`), the Supabase `FCM_SERVICE_ACCOUNT_JSON` secret, and a real-device background push test. Until then, the active Realtime inbox is the fallback.
-- A production map/routing provider and its API credentials/usage terms; current OpenStreetMap Nominatim and public OSRM demo endpoints are development services.
+- No paid map API key is needed for the starter: OpenStreetMap tiles, Nominatim lookup and public OSRM routing are used with caching, request spacing and attribution. These shared community/demo endpoints are rate-limited and have no uptime/SLA guarantee; they are not unlimited production infrastructure.
 - A contracted insurance provider and actual policy terms before any driver can receive the 1,000-ride insurance reward.
 - Real-device passenger/driver testing, operational monitoring, backups, legal review, abuse/rate-limit controls, security review and release signing.
 - Payment gateway intentionally remains out of scope for this build.
@@ -77,7 +77,7 @@ Never put Supabase service-role keys or payment secrets in client apps. Test boo
 ## Safety and production-readiness notes
 - The Android app includes an SOS screen: users can call India's emergency number 112, save an optional emergency contact, and open an SMS draft containing their current map location. The user must review/send the SMS; Tip Car does not silently message or dispatch emergency services.
 - Apply migrations `20261123130000_add_emergency_contact.sql`, `20261123140000_allow_driver_cancel_before_start.sql`, `20261123150000_fix_driver_cancel_transition_order.sql`, and `20261123160000_allow_no_otp_anonymous_sessions.sql` in filename order before using SOS contact storage, driver cancellation and no-OTP ride workflows.
-- Map screens currently use OpenStreetMap tiles with Nominatim place lookup and the public OSRM routing demo. This is a development setup, not a Google Maps integration or production availability guarantee. A production map/routing provider and usage terms must be selected before public scale.
+- Map screens use free-to-start OpenStreetMap tiles, Nominatim address lookup and the public OSRM routing demo; no API key or billing account is needed. Address results and route quotes are cached in memory, Nominatim lookups are spaced by at least 1.1 seconds, and the map displays OpenStreetMap attribution. Public endpoints remain rate-limited community services with no SLA. A production map/routing provider and usage terms must be selected before public scale.
 - Scheduled booking cancellation and instant taxi passenger cancellation are available. A formal refund workflow is not active because Tip Car does not collect payments.
 - Alternative scheduled-ride fallback is passenger-selected and atomic with cancellation of the still-searching instant taxi request. It is not an automatic guaranteed dispatch service.
 - FCM push code and the Supabase Edge Function are present, but push delivery remains unverified until the Firebase Android config and `FCM_SERVICE_ACCOUNT_JSON` secret are configured and a physical-device test succeeds.
