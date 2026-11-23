@@ -12,6 +12,7 @@ import '../utils/payment_validation.dart';
 import 'driver_benefits_screen.dart';
 import 'booking_history_screen.dart';
 import 'instant_taxi_screen.dart';
+import 'sos_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool configured;
@@ -835,6 +836,16 @@ class _HomeScreenState extends State<HomeScreen> {
             leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff15b5b3))),
             title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text('${selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
+          ),
+        ),
+        Card(
+          child: ListTile(
+            leading: const CircleAvatar(backgroundColor: Color(0xffffeeee), child: Icon(Icons.sos_rounded, color: Colors.red)),
+            title: const Text('SOS Emergency Help', style: TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: const Text('Call emergency services or message your saved contact'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const SosScreen(),
+            )),
           ),
         ),
         Card(
