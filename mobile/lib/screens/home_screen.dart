@@ -26,10 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final from = TextEditingController(text: 'Porbandar');
   final to = TextEditingController();
   final phone = TextEditingController();
-  final otp = TextEditingController();
   final name = TextEditingController();
-  final email = TextEditingController();
-  final password = TextEditingController();
   final vehicle = TextEditingController();
   final number = TextEditingController();
   final fare = TextEditingController(text: '300');
@@ -45,8 +42,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool photoUploading = false;
   String? avatarUrl;
   int tab = 0;
-  int authMethod = 0;
-  bool otpSent = false;
+  String savedName = '';
+  String savedPhone = '';
 
   SupabaseClient? get db =>
       widget.configured ? Supabase.instance.client : null;
@@ -69,81 +66,62 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Text('Welcome to Tip Car',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: tipCarNavy)),
                   const SizedBox(height: 6),
-                  const Text('Verify your mobile number to create or access your account.',
+                  const Text('Enter your name and mobile number to continue. No OTP or SMS code.',
                     style: TextStyle(color: Color(0xff718096))),
                   const SizedBox(height: 18),
                   TextField(
                     controller: name,
                     textCapitalization: TextCapitalization.words,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Your name'),
+                    enabled: !loading,
+                    decoration: const InputDecoration(labelText: 'Full name'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: phone,
                     keyboardType: TextInputType.phone,
-                    enabled: !otpSent && !loading,
+                    enabled: !loading,
                     textInputAction: TextInputAction.done,
                     decoration: const InputDecoration(
                       labelText: 'Mobile number',
-                      hintText: '+91 98765 43210',
+                      hintText: '98765 43210',
                     ),
                   ),
                   const SizedBox(height: 14),
-                  if (!otpSent) ...[
-                    const Text('I want to use Tip Car as'),
-                    const SizedBox(height: 8),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(value: 'passenger', label: Text('Passenger'), icon: Icon(Icons.person_outline)),
-                        ButtonSegment(value: 'driver', label: Text('Driver'), icon: Icon(Icons.directions_car_outlined)),
-                      ],
-                      selected: {selectedRole},
-                      onSelectionChanged: (selection) => setState(() => selectedRole = selection.first),
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: loading ? null : sendOtp,
-                      icon: loading
+                  const Text('I want to use Tip Car as'),
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'passenger', label: Text('Passenger'), icon: Icon(Icons.person_outline)),
+                      ButtonSegment(value: 'driver', label: Text('Driver'), icon: Icon(Icons.directions_car_outlined)),
+                    ],
+                    selected: {selectedRole},
+                    onSelectionChanged: loading
+                        ? null
+                        : (selection) => setState(() => selectedRole = selection.first),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: loading ? null : continueWithoutOtp,
+                    icon: loading
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.sms_outlined),
-                      label: Text(loading ? 'Sending code...' : 'Send SMS verification code'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: tipCarNavy,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
+                        : const Icon(Icons.arrow_forward_rounded),
+                    label: Text(loading ? 'Saving...' : 'Continue'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: tipCarNavy,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                  ] else ...[
-                    TextField(
-                      controller: otp,
-                      keyboardType: TextInputType.number,
-                      maxLength: 6,
-                      decoration: const InputDecoration(labelText: 'SMS verification code'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: loading ? null : verifyOtp,
-                      icon: loading
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.verified_user_outlined),
-                      label: Text(loading ? 'Verifying...' : 'Verify & continue'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: tipCarNavy,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: loading ? null : () => setState(() { otpSent = false; otp.clear(); message = ''; }),
-                      child: const Text('Change mobile number'),
-                    ),
-                  ],
+                  ),
                   if (message.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(message, style: const TextStyle(color: Colors.red)),
                   ],
                   const SizedBox(height: 8),
-                  const Text('Your mobile number is verified by SMS. Location is requested only when you use live ride features.',
+                  const Text(
+                    'Your number is saved as contact information and is not verified by SMS. Location is requested only when you use live ride features.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 11, color: Color(0xff718096))),
+                    style: TextStyle(fontSize: 11, color: Color(0xff718096)),
+                  ),
                 ],
               ),
             ),
@@ -152,6 +130,46 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     ),
   );
+
+  Future<void> continueWithoutOtp() async {
+    final fullName = name.text.trim();
+    final raw = phone.text.trim().replaceAll(RegExp(r'[^0-9+]'), '');
+    final normalized = raw.startsWith('+') ? raw : '+91$raw';
+    final digits = normalized.replaceAll(RegExp(r'[^0-9]'), '');
+    if (fullName.isEmpty) {
+      setState(() => message = 'Please enter your full name.');
+      return;
+    }
+    if (digits.length < 10 || digits.length > 15) {
+      setState(() => message = 'Please enter a valid mobile number.');
+      return;
+    }
+    setState(() { loading = true; message = ''; });
+    try {
+      var user = db!.auth.currentUser;
+      if (user == null) {
+        final response = await db!.auth.signInAnonymously();
+        user = response.user;
+      }
+      if (user == null) throw Exception('Could not create a Tip Car session. Please try again.');
+      await _ensureProfile(user, allowRoleUpdate: true);
+      await _loadAvatar();
+      if (!mounted) return;
+      setState(() {
+        savedName = fullName;
+        savedPhone = normalized;
+        tab = 0;
+        message = 'Welcome to Tip Car, $fullName!';
+      });
+    } catch (error) {
+      if (mounted) {
+        setState(() => message =
+            'Could not save your account: $error. Anonymous sign-in must be enabled in Supabase Authentication settings.');
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
 
   Future<void> _loadAvatar() async {
     if (!widget.configured || db!.auth.currentUser == null) return;
@@ -206,246 +224,60 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _ensureProfile(dynamic user) async {
-    final metadata = user.userMetadata as Map<String, dynamic>? ?? {};
+  Future<void> _ensureProfile(
+    dynamic user, {bool allowRoleUpdate = false}
+  ) async {
     final existing = await db!.from('profiles')
-        .select('full_name, role')
+        .select('full_name, phone, role')
         .eq('id', user.id)
         .maybeSingle();
 
     final existingName = existing?['full_name']?.toString() ?? '';
+    final existingPhone = existing?['phone']?.toString() ?? '';
     final existingRole = existing?['role']?.toString();
-    final metadataRole = metadata['role']?.toString();
-    final role = existingRole ??
-        (metadataRole == 'driver' ? 'driver' : selectedRole);
+    final role = existingRole != null && !allowRoleUpdate
+        ? existingRole
+        : selectedRole;
     final enteredName = name.text.trim();
-    final metadataName = metadata['full_name']?.toString() ?? '';
-    final fullName = enteredName.isNotEmpty
-        ? enteredName
-        : (existingName.isNotEmpty ? existingName : metadataName);
-
-    // Auth's phone is the verified number. Persist it in the app profile too,
-    // while preserving an existing passenger/driver role on repeat logins.
-    final verifiedPhone = (user.phone as String?)?.trim();
-    final savedPhone = (verifiedPhone?.isNotEmpty ?? false)
-        ? verifiedPhone!
-        : phone.text.trim();
+    final fullName = enteredName.isNotEmpty ? enteredName : existingName;
+    final enteredPhone = phone.text.trim();
+    final savedNumber = enteredPhone.isNotEmpty ? enteredPhone : existingPhone;
 
     await db!.from('profiles').upsert(
       <String, dynamic>{
         'id': user.id,
         'full_name': fullName,
-        'phone': savedPhone,
+        'phone': savedNumber,
         'role': role,
       },
       onConflict: 'id',
     );
     if (mounted) {
-      phone.text = savedPhone;
-      if (fullName.isNotEmpty) name.text = fullName;
-      selectedRole = role;
+      setState(() {
+        savedName = fullName;
+        savedPhone = savedNumber;
+        name.text = fullName;
+        phone.text = savedNumber;
+        selectedRole = role;
+      });
     }
   }
 
-  Future<void> sendOtp() async {
-    final raw = phone.text.trim().replaceAll(' ', '').replaceAll('-', '');
-    final normalized = raw.startsWith('+') ? raw : '+91$raw';
-    final digits = normalized.replaceAll(RegExp('[^0-9]'), '');
-    if (!normalized.startsWith('+') || digits.length < 8 || digits.length > 15) {
-      setState(() => message = 'Enter a valid mobile number, for example +91 98765 43210.');
-      return;
-    }
-    if (name.text.trim().isEmpty) {
-      setState(() => message = 'Enter your name first.');
-      return;
-    }
-    setState(() { loading = true; message = ''; });
-    try {
-      phone.text = normalized;
-      await db!.auth.signInWithOtp(phone: normalized);
-      if (mounted) setState(() { otpSent = true; message = 'SMS code sent. Enter it below.'; });
-    } catch (error) {
-      if (mounted) setState(() => message = 'Could not send SMS code: $error');
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
+  @override
+  void initState() {
+    super.initState();
+    _restoreSavedProfile();
   }
 
-  Future<void> verifyOtp() async {
-    if (otp.text.trim().length < 4) {
-      setState(() => message = 'Enter the SMS verification code.');
-      return;
-    }
-    setState(() { loading = true; message = ''; });
+  Future<void> _restoreSavedProfile() async {
+    if (!widget.configured) return;
+    final user = db!.auth.currentUser;
+    if (user == null) return;
     try {
-      await db!.auth.verifyOTP(
-        phone: phone.text.trim(),
-        token: otp.text.trim(),
-        type: OtpType.sms,
-      );
-      final user = db!.auth.currentUser;
-      if (user == null) throw Exception('Verification succeeded but no login session was created. Please try again.');
       await _ensureProfile(user);
       await _loadAvatar();
-      if (mounted) {
-        setState(() {
-          message = 'Mobile verified. Your number is saved. Welcome to Tip Car!';
-          tab = 0;
-          otpSent = false;
-          otp.clear();
-        });
-      }
     } catch (error) {
-      if (mounted) setState(() => message = 'Verification failed: $error');
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
-  }
-
-  Future<void> sendEmailOtp() async {
-    if (email.text.trim().isEmpty) {
-      setState(() => message = 'Enter your email address.');
-      return;
-    }
-    try {
-      await db!.auth.signInWithOtp(
-        email: email.text.trim(),
-        shouldCreateUser: false,
-      );
-      if (mounted) setState(() => message = 'Email login code sent. Check your inbox and spam folder.');
-    } catch (error) {
-      if (mounted) setState(() => message = error.toString());
-    }
-  }
-
-  Future<void> verifyEmailOtp() async {
-    if (email.text.trim().isEmpty || otp.text.trim().isEmpty) {
-      setState(() => message = 'Enter your email address and the code from your email.');
-      return;
-    }
-    try {
-      await db!.auth.verifyOTP(
-        email: email.text.trim(),
-        token: otp.text.trim(),
-        type: OtpType.email,
-      );
-      final user = db!.auth.currentUser;
-      if (user != null) await _ensureProfile(user);
-      await _loadAvatar();
-      if (mounted) setState(() => message = 'Signed in with email code.');
-    } catch (error) {
-      if (mounted) setState(() => message = error.toString());
-    }
-  }
-
-  Future<void> signInWithEmail() async {
-    if (email.text.trim().isEmpty || password.text.isEmpty) {
-      setState(() => message = 'Enter your email and password.');
-      return;
-    }
-    try {
-      await db!.auth.signInWithPassword(
-        email: email.text.trim(),
-        password: password.text,
-      );
-      final user = db!.auth.currentUser;
-      if (user != null) await _ensureProfile(user);
-      await _loadAvatar();
-      if (mounted) setState(() => message = 'Signed in with email and password.');
-    } catch (error) {
-      if (mounted) setState(() => message = error.toString());
-    }
-  }
-
-  Future<void> sendLinkedEmailCode() async {
-    if (email.text.trim().isEmpty) {
-      setState(() => message = 'Enter the email address you want to add.');
-      return;
-    }
-    try {
-      await db!.auth.updateUser(UserAttributes(email: email.text.trim()));
-      if (mounted) setState(() => message = 'Verification code sent to the new email. Your current sign-in stays active until verification.');
-    } catch (error) {
-      if (mounted) setState(() => message = 'Could not add email: $error');
-    }
-  }
-
-  Future<void> sendLinkedPhoneCode() async {
-    if (phone.text.trim().isEmpty) {
-      setState(() => message = 'Enter the mobile number with country code.');
-      return;
-    }
-    try {
-      await db!.auth.updateUser(UserAttributes(phone: phone.text.trim()));
-      if (mounted) setState(() => message = 'SMS verification code sent to the new number.');
-    } catch (error) {
-      if (mounted) setState(() => message = 'Could not add phone: $error');
-    }
-  }
-
-  Future<void> verifyLinkedEmailCode() async {
-    if (email.text.trim().isEmpty || otp.text.trim().isEmpty) {
-      setState(() => message = 'Enter the new email and its verification code.');
-      return;
-    }
-    try {
-      await db!.auth.verifyOTP(
-        email: email.text.trim(),
-        token: otp.text.trim(),
-        type: OtpType.emailChange,
-      );
-      await _loadAvatar();
-      if (mounted) setState(() => message = 'Email verified and added to this Tip Car account.');
-    } catch (error) {
-      if (mounted) setState(() => message = 'Email verification failed: $error');
-    }
-  }
-
-  Future<void> verifyLinkedPhoneCode() async {
-    if (phone.text.trim().isEmpty || otp.text.trim().isEmpty) {
-      setState(() => message = 'Enter the new mobile number and its SMS code.');
-      return;
-    }
-    try {
-      await db!.auth.verifyOTP(
-        phone: phone.text.trim(),
-        token: otp.text.trim(),
-        type: OtpType.phoneChange,
-      );
-      await _loadAvatar();
-      if (mounted) setState(() => message = 'Phone verified and added to this Tip Car account.');
-    } catch (error) {
-      if (mounted) setState(() => message = 'Phone verification failed: $error');
-    }
-  }
-
-  Future<void> createEmailAccount() async {
-    if (name.text.trim().isEmpty ||
-        email.text.trim().isEmpty ||
-        password.text.length < 6) {
-      setState(() => message =
-          'Enter your name, email and a password of at least 6 characters.');
-      return;
-    }
-    try {
-      final response = await db!.auth.signUp(
-        email: email.text.trim(),
-        password: password.text,
-        data: {
-          'full_name': name.text.trim(),
-          'role': selectedRole,
-        },
-      );
-      if (response.user != null && response.session != null) {
-        await _ensureProfile(response.user);
-        await _loadAvatar();
-      }
-      if (!mounted) return;
-      setState(() => message = response.session == null
-          ? 'Account created. Confirm your email, then sign in.'
-          : 'Account created and signed in.');
-    } catch (error) {
-      if (mounted) setState(() => message = error.toString());
+      if (mounted) setState(() => message = 'Could not load saved profile: $error');
     }
   }
 
@@ -663,10 +495,7 @@ class _HomeScreenState extends State<HomeScreen> {
     from.dispose();
     to.dispose();
     phone.dispose();
-    otp.dispose();
     name.dispose();
-    email.dispose();
-    password.dispose();
     vehicle.dispose();
     number.dispose();
     fare.dispose();
@@ -678,24 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: const TipCarBrand(compact: true),
-          actions: [
-            if (db?.auth.currentUser != null)
-              IconButton(
-                tooltip: 'Sign out',
-                onPressed: () async {
-                  await db!.auth.signOut();
-                  if (mounted) {
-                    setState(() {
-                      message = 'Signed out.';
-                      tab = 0;
-                      otpSent = false;
-                      otp.clear();
-                    });
-                  }
-                },
-                icon: const Icon(Icons.logout),
-              ),
-          ],
+
         ),
         body: !widget.configured
             ? const Center(
@@ -979,8 +791,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
     final metadata = user?.userMetadata ?? <String, dynamic>{};
-    final profileName = (metadata['full_name'] ?? '').toString().trim();
-    final profilePhone = (metadata['phone'] ?? '').toString().trim();
+    final profileName = savedName.isNotEmpty ? savedName : (metadata['full_name'] ?? '').toString().trim();
+    final profilePhone = savedPhone.isNotEmpty ? savedPhone : (metadata['phone'] ?? '').toString().trim();
     final accountLabel = profileName.isNotEmpty ? profileName : 'Tip Car member';
     final phoneLabel = profilePhone.isNotEmpty ? profilePhone : 'Mobile number not added';
     return ListView(
