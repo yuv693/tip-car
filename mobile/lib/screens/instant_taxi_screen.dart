@@ -519,6 +519,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
                     destination: _destination.text.trim().isNotEmpty
                         ? _destination.text.trim()
                         : (_myRequest!['destination_label'] ?? '').toString(),
+                    instantRequestId: _myRequest!['id']?.toString(),
                   ),
                 )),
                 icon: const Icon(Icons.alt_route),
