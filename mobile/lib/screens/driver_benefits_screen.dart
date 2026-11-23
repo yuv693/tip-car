@@ -187,7 +187,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
               color: const Color(0xfffff4e5),
               child: const Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Your driver account is locked for new customer bookings while commission is due. Pay Tip Car using the official payment instructions and contact an admin for verification. Your account unlocks only after the admin marks the payment verified. Do not treat a UPI screenshot or app-opening as payment confirmation.', style: TextStyle(color: Color(0xff8a4b08), height: 1.45, fontWeight: FontWeight.w600)),
+                child: Text('New scheduled bookings and booking confirmations are paused while commission is due. Tip Car has not configured an in-app commission payment gateway or published payment instructions. Contact Tip Car admin for the approved payment method and reference; only an admin can verify the payment and clear the due balance. A UPI screenshot or opening a payment app is not proof of payment.', style: TextStyle(color: Color(0xff8a4b08), height: 1.45, fontWeight: FontWeight.w600)),
               ),
             ),
           const SizedBox(height: 14),
