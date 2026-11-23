@@ -16,7 +16,8 @@ gateway webhook verifies it. Never put service-role keys or payment secrets in c
 2. Run `supabase/schema.sql` in SQL Editor.
 3. Enable Phone in Authentication > Providers and configure an SMS provider.
 4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080900_limit_active_instant_taxi_requests.sql`, then apply `20261121090000_route_fare_kyc_fcm.sql` and `20261121100000_remove_driver_kyc_gate.sql` in filename order.
-5. Apply `supabase/migrations/20261121120000_unified_completed_ride_commission_and_insurance_reward.sql` after the earlier migrations to enable the shared ₹20 completed-ride commission and 1,000-ride reward counter. The `get_my_driver_benefits()` RPC is used by the Android app.\n6. Copy the project URL and anon/public key.
+5. Apply `supabase/migrations/20261121120000_unified_completed_ride_commission_and_insurance_reward.sql` after the earlier migrations to enable the shared ₹20 completed-ride commission and 1,000-ride reward counter. The `get_my_driver_benefits()` RPC is used by the Android app.
+6. Copy the project URL and anon/public key.
 
 ### Website
 ```bash
