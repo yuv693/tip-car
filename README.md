@@ -17,7 +17,8 @@ gateway webhook verifies it. Never put service-role keys or payment secrets in c
 3. In Authentication > Sign In / Providers, enable **Anonymous Sign-Ins** for the Android app. No Phone provider or SMS gateway is needed for Android login.
 4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080900_limit_active_instant_taxi_requests.sql`, then apply `20261121090000_route_fare_kyc_fcm.sql` and `20261121100000_remove_driver_kyc_gate.sql` in filename order.
 5. Apply `supabase/migrations/20261121120000_unified_completed_ride_commission_and_insurance_reward.sql` after the earlier migrations to enable the shared ₹20 completed-ride commission and 1,000-ride reward counter. The `get_my_driver_benefits()` RPC is used by the Android app.
-6. Copy the project URL and anon/public key.
+6. Apply all later `20261123*.sql` migrations in filename order. In particular, `20261123160000_allow_no_otp_anonymous_sessions.sql` is required for the no-OTP Android sessions to create rides, go online and share live locations while keeping row ownership and nearby-driver restrictions.
+7. Copy the project URL and publishable/anon key.
 
 ### Website
 ```bash
@@ -54,13 +55,11 @@ Do this only for your own account; the Android mobile number is not OTP-verified
 - Booking history and basic admin overview (web)
 
 ## Still needs external configuration / production hardening
-- Google Maps, Places autocomplete and live GPS tracking
-- Razorpay/other payment gateway and signed webhook verification
-- Push notifications (FCM) for incoming requests when the driver app is backgrounded or closed; the current instant request inbox uses an active Realtime connection
-- SMS provider is not required for Android app login (no OTP is used).
-- SOS dispatch/contact workflow
-- Cancellation, refund and dispute workflows
-- Legal review, rate limiting, audit logs, monitoring, backups, security testing and Play Store signing
+- Firebase Android app configuration (`google-services.json`), the Supabase `FCM_SERVICE_ACCOUNT_JSON` secret, and a real-device background push test. Until then, the active Realtime inbox is the fallback.
+- A production map/routing provider and its API credentials/usage terms; current OpenStreetMap Nominatim and public OSRM demo endpoints are development services.
+- A contracted insurance provider and actual policy terms before any driver can receive the 1,000-ride insurance reward.
+- Real-device passenger/driver testing, operational monitoring, backups, legal review, abuse/rate-limit controls, security review and release signing.
+- Payment gateway intentionally remains out of scope for this build.
 
 Never put Supabase service-role keys or payment secrets in client apps. Test booking and payment flows before accepting money.
 
@@ -77,7 +76,7 @@ Never put Supabase service-role keys or payment secrets in client apps. Test boo
 
 ## Safety and production-readiness notes
 - The Android app includes an SOS screen: users can call India's emergency number 112, save an optional emergency contact, and open an SMS draft containing their current map location. The user must review/send the SMS; Tip Car does not silently message or dispatch emergency services.
-- Apply migrations `20261123130000_add_emergency_contact.sql` and `20261123140000_allow_driver_cancel_before_start.sql`, and `20261123150000_fix_driver_cancel_transition_order.sql` in filename order before using SOS contact storage and assigned-driver cancellation.
+- Apply migrations `20261123130000_add_emergency_contact.sql`, `20261123140000_allow_driver_cancel_before_start.sql`, `20261123150000_fix_driver_cancel_transition_order.sql`, and `20261123160000_allow_no_otp_anonymous_sessions.sql` in filename order before using SOS contact storage, driver cancellation and no-OTP ride workflows.
 - Map screens currently use OpenStreetMap tiles with Nominatim place lookup and the public OSRM routing demo. This is a development setup, not a Google Maps integration or production availability guarantee. A production map/routing provider and usage terms must be selected before public scale.
 - Scheduled booking cancellation and instant taxi passenger cancellation are available. A formal refund workflow is not active because Tip Car does not collect payments.
 - Alternative scheduled-ride fallback is passenger-selected and atomic with cancellation of the still-searching instant taxi request. It is not an automatic guaranteed dispatch service.
