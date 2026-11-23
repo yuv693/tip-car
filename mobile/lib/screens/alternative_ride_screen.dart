@@ -93,6 +93,19 @@ class _AlternativeRideScreenState extends State<AlternativeRideScreen> {
     );
     if (confirm != true) return;
     try {
+      final requestId = widget.instantRequestId;
+      if (requestId != null) {
+        final cancelled = await _db.from('ride_requests').update({
+          'status': 'cancelled',
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', requestId).eq('passenger_id', user.id)
+            .eq('status', 'searching').select('id').maybeSingle();
+        if (cancelled == null) {
+          if (mounted) setState(() => _message =
+              'Your taxi request may already have been accepted. Return to the taxi screen and check its status before booking another ride.');
+          return;
+        }
+      }
       final bookingId = await _db.rpc('create_booking', params: {
         'p_ride_id': ride['id'],
         'p_seats': 1,
@@ -101,13 +114,6 @@ class _AlternativeRideScreenState extends State<AlternativeRideScreen> {
         'p_booking_id': bookingId,
         'p_method': 'cash',
       });
-      final requestId = widget.instantRequestId;
-      if (requestId != null) {
-        await _db.from('ride_requests').update({
-          'status': 'cancelled',
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('id', requestId).eq('passenger_id', user.id).eq('status', 'searching');
-      }
       if (!mounted) return;
       setState(() => _message = 'Alternative ride booking created. Pay the driver directly; the driver must confirm the booking.');
       await _search();
