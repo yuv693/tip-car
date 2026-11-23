@@ -73,3 +73,12 @@ Never put Supabase service-role keys or payment secrets in client apps. Test boo
 - Customer fallback: while an instant taxi request is searching, the passenger can open **Find an alternative scheduled ride**, search active scheduled rides to the same destination, and explicitly choose/book one. This is a passenger-selected fallback, not an automatic guarantee that a vehicle will always be available; no ride is booked without the passenger confirming it.
 - FCM function `notify-nearby-drivers` is deployed in Supabase. To make Android push delivery live, create/configure the Firebase Android app, add `google-services.json` to `mobile/android/app/`, and set the Supabase Edge Function secret `FCM_SERVICE_ACCOUNT_JSON` to a Firebase service account with Firebase Cloud Messaging send permission. Until the Firebase Android config and secret are installed and a real device push is verified, the app keeps its Realtime inbox fallback and push delivery must be treated as unverified.
 - Never commit service-account JSON, private keys, or Firebase Admin credentials to GitHub.
+
+
+## Safety and production-readiness notes
+- The Android app includes an SOS screen: users can call India's emergency number 112, save an optional emergency contact, and open an SMS draft containing their current map location. The user must review/send the SMS; Tip Car does not silently message or dispatch emergency services.
+- Apply migration `20261123130000_add_emergency_contact.sql` before using the saved emergency-contact field.
+- Map screens currently use OpenStreetMap tiles with Nominatim place lookup and the public OSRM routing demo. This is a development setup, not a Google Maps integration or production availability guarantee. A production map/routing provider and usage terms must be selected before public scale.
+- Scheduled booking cancellation and instant taxi passenger cancellation are available. A formal refund workflow is not active because Tip Car does not collect payments.
+- Alternative scheduled-ride fallback is passenger-selected and atomic with cancellation of the still-searching instant taxi request. It is not an automatic guaranteed dispatch service.
+- FCM push code and the Supabase Edge Function are present, but push delivery remains unverified until the Firebase Android config and `FCM_SERVICE_ACCOUNT_JSON` secret are configured and a physical-device test succeeds.
