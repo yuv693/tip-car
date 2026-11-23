@@ -6,15 +6,15 @@ A single monorepo containing:
 - `supabase/schema.sql`: database tables, constraints and Row Level Security policies
 
 ## Important status
-This is a runnable application foundation, not a live production deployment. Real OTP delivery,
-Google Maps billing/API access, payment gateway credentials, SMS/push credentials, domain hosting,
-and Play Store signing must be configured by the owner. No real payment is claimed until a
+This is a runnable application foundation, not a live production deployment. Google Maps billing/API access,
+payment gateway credentials, push credentials, domain hosting, and Play Store signing must be configured by the owner.
+The Android app uses a name + mobile-number profile with no SMS OTP; the mobile number is not verified. No real payment is claimed until a
 gateway webhook verifies it. Never put service-role keys or payment secrets in client apps.
 
 ## Recommended setup
 1. Create a project at https://supabase.com
 2. Run `supabase/schema.sql` in SQL Editor.
-3. Enable Phone in Authentication > Providers and configure an SMS provider.
+3. In Authentication > Sign In / Providers, enable **Anonymous Sign-Ins** for the Android app. No Phone provider or SMS gateway is needed for Android login.
 4. After running `supabase/schema.sql`, apply the SQL files `supabase/migrations/20261121072354_tip_car_bike_vehicle_type.sql` and `supabase/migrations/20261121080317_instant_bike_car_taxi_matching.sql` through `supabase/migrations/20261121080900_limit_active_instant_taxi_requests.sql`, then apply `20261121090000_route_fare_kyc_fcm.sql` and `20261121100000_remove_driver_kyc_gate.sql` in filename order.
 5. Apply `supabase/migrations/20261121120000_unified_completed_ride_commission_and_insurance_reward.sql` after the earlier migrations to enable the shared ₹20 completed-ride commission and 1,000-ride reward counter. The `get_my_driver_benefits()` RPC is used by the Android app.
 6. Copy the project URL and anon/public key.
@@ -41,10 +41,10 @@ After registering your account, run in Supabase SQL Editor (replace the phone):
 ```sql
 update public.profiles set role = 'admin' where phone = '+91XXXXXXXXXX';
 ```
-Do this only for your own verified admin account.
+Do this only for your own account; the Android mobile number is not OTP-verified.
 
 ## Included foundation
-- Phone OTP sign-in through Supabase Auth
+- Android login: enter full name + mobile number, tap Continue; no OTP/SMS. Supabase anonymous Auth creates a persistent app session and the profile stores the entered name, mobile number and role. The mobile number is contact information only and is not verified.
 - Passenger/driver profile roles
 - Publish bike, car and bus rides with route, date, seats and fare (web + Android)
 - Filter ride search by bike, car or bus; bike rides are limited to one passenger and car rides to seven passenger seats
@@ -57,7 +57,7 @@ Do this only for your own verified admin account.
 - Google Maps, Places autocomplete and live GPS tracking
 - Razorpay/other payment gateway and signed webhook verification
 - Push notifications (FCM) for incoming requests when the driver app is backgrounded or closed; the current instant request inbox uses an active Realtime connection
-- SMS provider
+- SMS provider is not required for Android app login (no OTP is used).
 - SOS dispatch/contact workflow
 - Cancellation, refund and dispute workflows
 - Legal review, rate limiting, audit logs, monitoring, backups, security testing and Play Store signing
