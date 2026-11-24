@@ -49,6 +49,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   Timer? _heartbeat;
   StreamSubscription<List<Map<String, dynamic>>>? _requestStream;
   StreamSubscription<List<Map<String, dynamic>>>? _locationStream;
+  String? _locationRequestId;
 
   @override
   void initState() {
@@ -188,9 +189,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   }
 
   void _watchRequestLocation(String requestId) {
-    if (_locationStream != null &&
-        _myRequest?['id']?.toString() == requestId) return;
+    if (_locationStream != null && _locationRequestId == requestId) return;
     _locationStream?.cancel();
+    _locationRequestId = requestId;
     _locationStream = db.from('ride_request_locations')
         .stream(primaryKey: ['request_id'])
         .eq('request_id', requestId).listen((rows) {
