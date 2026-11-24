@@ -121,7 +121,26 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                 const SizedBox(height: 16),
                 ClipRRect(borderRadius: BorderRadius.circular(20), child: LinearProgressIndicator(value: (completedRides / 1000).clamp(0.0, 1.0).toDouble(), minHeight: 10, backgroundColor: const Color(0xffe8edf6), color: blue)),
                 const SizedBox(height: 12),
-                Text(insuranceEligible ? 'Congratulations! You reached 1,000 completed rides. Tip Car insurance reward is now due for eligibility and policy processing.' : 'Every completed scheduled booking and instant taxi ride counts. Cancelled rides do not count. Complete ${1000 - completedRides.clamp(0, 1000)} more rides to reach the reward milestone.', style: const TextStyle(color: Color(0xff64718a), height: 1.45)),
+                Text(insuranceEligible ? 'Congratulations! You reached 1,000 completed rides. Tip Car will arrange your insurance reward after checking the policy and vehicle details.' : 'Tip Car will provide the insurance reward after 1,000 completed rides. Every completed scheduled booking and instant taxi ride counts; cancelled rides do not count. Complete ${1000 - completedRides.clamp(0, 1000)} more rides to reach the milestone.', style: const TextStyle(color: Color(0xff64718a), height: 1.45)),
+                const SizedBox(height: 18),
+                const Text('INSURANCE COMPANIES WE WILL COMPARE', style: TextStyle(fontSize: 11, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: Color(0xff77849a))),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: const [
+                    _InsurerLogo(name: 'ACKO', domain: 'acko.com'),
+                    _InsurerLogo(name: 'Bajaj General', domain: 'bajajgeneralinsurance.com'),
+                    _InsurerLogo(name: 'HDFC ERGO', domain: 'hdfcergo.com'),
+                    _InsurerLogo(name: 'ICICI Lombard', domain: 'icicilombard.com'),
+                    _InsurerLogo(name: 'Go Digit', domain: 'godigit.com'),
+                    _InsurerLogo(name: 'TATA AIG', domain: 'tataaig.com'),
+                    _InsurerLogo(name: 'SBI General', domain: 'sbigeneral.in'),
+                    _InsurerLogo(name: 'Shriram', domain: 'shriramgi.com'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text('These are comparison options only, not Tip Car partners or sponsors. We will compare actual quotes and coverage before selecting a low-cost policy.', style: TextStyle(color: Color(0xff64718a), fontSize: 12, height: 1.4)),
               ]),
             ),
           ),
@@ -191,7 +210,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
               ),
             ),
           const SizedBox(height: 14),
-          const Text('Route matching currently checks exact starting point and destination. The insurance reward is funded from Tip Car commission revenue; the insurer, policy and coverage terms must be arranged before issuing a policy.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
+          const Text('Route matching currently checks exact starting point and destination. Tip Car funds the insurance reward from its commission revenue. No insurance company has been selected yet; policy and coverage will be confirmed before the reward is issued.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
         ],
       ),
     );
@@ -201,4 +220,43 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
     padding: const EdgeInsets.only(left: 4, bottom: 8),
     child: Text(value, style: const TextStyle(color: Color(0xff77849a), fontSize: 11, letterSpacing: 1.1, fontWeight: FontWeight.w800)),
   );
+}
+
+
+class _InsurerLogo extends StatelessWidget {
+  final String name;
+  final String domain;
+  const _InsurerLogo({required this.name, required this.domain});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 142,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: const Color(0xffe6ebf3)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 30,
+            height: 30,
+            child: Image.network(
+              'https://www.google.com/s2/favicons?domain=$domain&sz=64',
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => CircleAvatar(
+                radius: 15,
+                backgroundColor: const Color(0xffe8f0ff),
+                child: Text(name.substring(0, 1), style: const TextStyle(color: Color(0xff246bfe), fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800))),
+        ],
+      ),
+    );
+  }
 }
