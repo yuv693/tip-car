@@ -730,11 +730,22 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (role != null && mounted) {
-      setState(() {
-        selectedRole = role;
-        tab = 1;
-        message = 'Mode changed to ${role == 'driver' ? 'Driver' : 'Passenger'}. Your account permissions still follow your saved profile role.';
-      });
+      setState(() { loading = true; message = ''; });
+      try {
+        final user = db?.auth.currentUser;
+        if (user == null) throw Exception('Please sign in again.');
+        await db!.from('profiles').update({'role': role}).eq('id', user.id);
+        if (!mounted) return;
+        setState(() {
+          selectedRole = role;
+          tab = 1;
+          message = 'Mode changed to ${role == 'driver' ? 'Driver' : 'Passenger'}.';
+        });
+      } catch (error) {
+        if (mounted) setState(() => message = 'Could not change account mode: $error');
+      } finally {
+        if (mounted) setState(() => loading = false);
+      }
     }
   }
 
