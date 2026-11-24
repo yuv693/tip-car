@@ -121,7 +121,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
                 const SizedBox(height: 16),
                 ClipRRect(borderRadius: BorderRadius.circular(20), child: LinearProgressIndicator(value: (completedRides / 1000).clamp(0.0, 1.0).toDouble(), minHeight: 10, backgroundColor: const Color(0xffe8edf6), color: blue)),
                 const SizedBox(height: 12),
-                Text(insuranceEligible ? 'Congratulations! You reached 1,000 completed rides. Tip Car will arrange your insurance reward after checking the policy and vehicle details.' : 'Tip Car will provide the insurance reward after 1,000 completed rides. Every completed scheduled booking and instant taxi ride counts; cancelled rides do not count. Complete ${1000 - completedRides.clamp(0, 1000)} more rides to reach the milestone.', style: const TextStyle(color: Color(0xff64718a), height: 1.45)),
+                Text(insuranceEligible ? 'Congratulations! You reached 1,000 completed rides. Tip Car will arrange your insurance reward after checking the policy and vehicle details.' : 'Tip Car will provide a motor-insurance reward for private cars and commercial/taxi cars after 1,000 completed rides. The policy must match the vehicle's actual registration and use. Every completed scheduled booking and instant taxi ride counts; cancelled rides do not count. Complete ${1000 - completedRides.clamp(0, 1000)} more rides to reach the milestone.', style: const TextStyle(color: Color(0xff64718a), height: 1.45)),
                 const SizedBox(height: 18),
                 const Text('INSURANCE COMPANIES WE WILL COMPARE', style: TextStyle(fontSize: 11, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: Color(0xff77849a))),
                 const SizedBox(height: 10),
@@ -216,7 +216,7 @@ class _DriverBenefitsScreenState extends State<DriverBenefitsScreen> {
               ),
             ),
           const SizedBox(height: 14),
-          const Text('Route matching currently checks exact starting point and destination. Tip Car funds the insurance reward from its commission revenue. No insurance company has been selected yet; policy and coverage will be confirmed before the reward is issued.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
+          const Text('Route matching currently checks exact starting point and destination. Tip Car funds the insurance reward from its commission revenue. Private-car and commercial/taxi motor policies will be compared separately; no insurer or policy has been selected yet, and coverage will be confirmed before the reward is issued.', style: TextStyle(color: Color(0xff7b879b), fontSize: 12, height: 1.45)),
         ],
       ),
     );
