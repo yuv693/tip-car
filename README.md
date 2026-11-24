@@ -57,7 +57,7 @@ Do this only for your own account; the Android mobile number is not OTP-verified
 ## Still needs external configuration / production hardening
 - Firebase Android app configuration (`google-services.json`), the Supabase `FCM_SERVICE_ACCOUNT_JSON` secret, and a real-device background push test. Until then, the active Realtime inbox is the fallback.
 - No paid map API key is needed for the starter: OpenStreetMap tiles, Nominatim lookup and public OSRM routing are used with caching, request spacing and attribution. These shared community/demo endpoints are rate-limited and have no uptime/SLA guarantee; they are not unlimited production infrastructure.
-- A contracted insurance provider and actual policy terms before any driver can receive the 1,000-ride insurance reward.
+- Tip Car's 1,000-completed-ride reward is intended to fund motor insurance for both private cars and commercial/taxi cars. Compare these as separate policy categories and match the policy to the vehicle's actual registration and use. A contracted insurer/distributor arrangement and confirmed policy terms are still required before issuing any cover; SK Finance / SK Bima is a comparison/distribution option, not a confirmed Tip Car partner or insurer.
 - Real-device passenger/driver testing, operational monitoring, backups, legal review, abuse/rate-limit controls, security review and release signing.
 - Payment gateway intentionally remains out of scope for this build.
 
