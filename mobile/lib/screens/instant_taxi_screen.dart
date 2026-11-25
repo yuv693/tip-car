@@ -511,6 +511,26 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         children: [
           if (!isDriver) ...[
             const Text('Book a nearby ride', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Card(
+              color: const Color(0xffeef5ff),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Icon(Icons.public, color: Color(0xff174a7e)),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Gujarat driver network: register once. When you go online, Tip Car automatically updates your live location. Only nearby passengers see your availability; no monthly manual update is needed.',
+                        style: TextStyle(fontSize: 13, color: Color(0xff17324d)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
             SegmentedButton<String>(
               segments: const [
