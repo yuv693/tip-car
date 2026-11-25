@@ -45,14 +45,16 @@ select r.id,1,r.destination from public.rides r
 where (select count(*) from public.ride_stops s where s.ride_id=r.id)=1
 on conflict(ride_id,stop_order) do nothing;
 
-create or replace function public.publish_route_ride(
+create function public.publish_route_ride(
  p_vehicle_type text,p_vehicle_name text,p_vehicle_number text,
  p_origin text,p_destination text,p_departure_at timestamptz,
- p_total_seats integer,p_fare_per_seat numeric,p_intermediate_stops text[] default '{}'
+ p_total_seats integer,p_fare_per_seat numeric,
+ p_intermediate_stops text[] default '{}',
+ p_intermediate_arrivals timestamptz[] default '{}'
 ) returns uuid
 language plpgsql security definer set search_path=''
 as $function$
-declare v_id uuid; v_stop text; v_order integer:=1;
+declare v_id uuid; v_stop text; v_order integer:=1; v_index integer:=1; v_arrival timestamptz;
 begin
  if auth.uid() is null then raise exception 'Login required'; end if;
  if not exists(select 1 from public.profiles p where p.id=auth.uid() and p.role in ('driver','admin')) then
@@ -66,27 +68,36 @@ begin
  if p_total_seats<1 or p_total_seats>60 or p_fare_per_seat<0 then raise exception 'Check seats and fare';
  end if;
  if coalesce(array_length(p_intermediate_stops,1),0)>8 then raise exception 'Maximum 8 intermediate stops'; end if;
+ if coalesce(array_length(p_intermediate_arrivals,1),0)>0 and
+    array_length(p_intermediate_arrivals,1)<>coalesce(array_length(p_intermediate_stops,1),0) then
+   raise exception 'Arrival time count must match intermediate stop count';
+ end if;
  insert into public.rides(driver_id,vehicle_type,vehicle_name,vehicle_number,origin,destination,departure_at,total_seats,available_seats,fare_per_seat)
  values(auth.uid(),p_vehicle_type::public.vehicle_type,trim(p_vehicle_name),trim(p_vehicle_number),
         trim(p_origin),trim(p_destination),p_departure_at,p_total_seats,p_total_seats,p_fare_per_seat)
  returning id into v_id;
- insert into public.ride_stops(ride_id,stop_order,location_name) values(v_id,0,trim(p_origin));
+ insert into public.ride_stops(ride_id,stop_order,location_name,planned_at) values(v_id,0,trim(p_origin),p_departure_at);
  if p_intermediate_stops is not null then
    foreach v_stop in array p_intermediate_stops loop
      if trim(coalesce(v_stop,''))='' then raise exception 'Intermediate stop cannot be empty'; end if;
      if lower(trim(v_stop)) in (lower(trim(p_origin)),lower(trim(p_destination))) then
        raise exception 'Remove duplicate origin or destination from intermediate stops';
      end if;
-     insert into public.ride_stops(ride_id,stop_order,location_name) values(v_id,v_order,trim(v_stop));
-     v_order:=v_order+1;
+     v_arrival:=null;
+     if coalesce(array_length(p_intermediate_arrivals,1),0)>0 then v_arrival:=p_intermediate_arrivals[v_index]; end if;
+     if v_arrival is not null and v_arrival<p_departure_at then raise exception 'Stop arrival time cannot be before departure'; end if;
+     insert into public.ride_stops(ride_id,stop_order,location_name,planned_at)
+     values(v_id,v_order,trim(v_stop),v_arrival);
+     v_order:=v_order+1; v_index:=v_index+1;
    end loop;
  end if;
- insert into public.ride_stops(ride_id,stop_order,location_name) values(v_id,v_order,trim(p_destination));
+ insert into public.ride_stops(ride_id,stop_order,location_name,planned_at)
+ values(v_id,v_order,trim(p_destination),null);
  return v_id;
 end;
 $function$;
-revoke all on function public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[]) from public,anon;
-grant execute on function public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[]) to authenticated;
+revoke all on function public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[],timestamptz[]) from public,anon;
+grant execute on function public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[],timestamptz[]) to authenticated;
 
 create or replace function public.search_route_segment_matches(
  p_origin text,p_destination text,p_min_seats integer default 1
