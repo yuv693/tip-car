@@ -100,19 +100,22 @@ $function$;
 revoke all on function public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[],timestamptz[]) from public,anon;
 grant execute on function public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[],timestamptz[]) to authenticated;
 
-create or replace function public.search_route_segment_matches(
+drop function if exists public.search_route_segment_matches(text,text,integer);
+create function public.search_route_segment_matches(
  p_origin text,p_destination text,p_min_seats integer default 1
 ) returns table (
  ride_id uuid,driver_id uuid,vehicle_type public.vehicle_type,vehicle_name text,
  vehicle_number text,origin text,destination text,departure_at timestamptz,
  total_seats integer,available_seats integer,fare_per_seat numeric,status public.ride_status,
- pickup_stop_order integer,dropoff_stop_order integer,segment_available_seats integer,segment_fare numeric
+ pickup_stop_order integer,dropoff_stop_order integer,segment_available_seats integer,segment_fare numeric,
+ pickup_planned_at timestamptz,dropoff_planned_at timestamptz
 )
 language sql stable security definer set search_path=''
 as $function$
  select r.id,r.driver_id,r.vehicle_type,r.vehicle_name,r.vehicle_number,r.origin,r.destination,
         r.departure_at,r.total_seats,r.available_seats,r.fare_per_seat,r.status,
-        a.stop_order,b.stop_order,cap.free_seats,r.fare_per_seat*(b.stop_order-a.stop_order)
+        a.stop_order,b.stop_order,cap.free_seats,
+        r.fare_per_seat*(b.stop_order-a.stop_order),a.planned_at,b.planned_at
  from public.rides r
  join public.ride_stops a on a.ride_id=r.id
  join public.ride_stops b on b.ride_id=r.id and b.stop_order>a.stop_order
