@@ -696,7 +696,59 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildDriverHomeTab() => ListView(
+    padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+    children: [
+      TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.94, end: 1), duration: const Duration(milliseconds: 650),
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: const LinearGradient(
+              colors: [Color(0xff0b1530), Color(0xff174d91), Color(0xffd97706)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight),
+            boxShadow: const [BoxShadow(color: Color(0x24102a56), blurRadius: 22, offset: Offset(0, 10))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Row(children: [
+              Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 27),
+              SizedBox(width: 9),
+              Text('TIP CAR DRIVER', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+            ]),
+            const SizedBox(height: 24),
+            const Text('Your next ride\nstarts here.', style: TextStyle(color: Colors.white, fontSize: 29, height: 1.08, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Manage your trips, share your route and help passengers travel.',
+              style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 22),
+      const Text('Driver tools', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Color(0xff0b1530))),
+      const SizedBox(height: 12),
+      _featureTile(Icons.add_road_rounded, 'Offer a scheduled ride', 'Publish your route and available seats',
+        const Color(0xfffff1e5), const Color(0xffd97706), () => setState(() => tab = 1)),
+      const SizedBox(height: 10),
+      _featureTile(Icons.local_taxi_rounded, 'Instant Bike / Car', 'Go online and manage instant trip requests',
+        const Color(0xffeaf2ff), const Color(0xff174d91), () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => InstantTaxiScreen(configured: widget.configured)))),
+      const SizedBox(height: 10),
+      _featureTile(Icons.emoji_events_rounded, 'Driver benefits', 'Track your 1,000-ride insurance progress',
+        const Color(0xfff2edff), const Color(0xff7052a3), () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => DriverBenefitsScreen(configured: widget.configured)))),
+      const SizedBox(height: 10),
+      _featureTile(Icons.receipt_long_rounded, 'My trips', 'See your booking and trip activity',
+        const Color(0xffe8f7f0), const Color(0xff15b5b3), () => setState(() => tab = 2)),
+      if (message.isNotEmpty)
+        Padding(padding: const EdgeInsets.all(12), child: Text(message, style: const TextStyle(color: Colors.blue))),
+    ],
+  );
+
   Widget _buildHomeTab() {
+    if (selectedRole == 'driver') return _buildDriverHomeTab();
     final signedIn = db?.auth.currentUser != null;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
