@@ -465,36 +465,8 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text('$availableSeats seat(s) available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green)),
                 const SizedBox(height: 10),
-                DropdownButtonFormField<int>(
-                  value: selectedPickup,
-                  decoration: const InputDecoration(labelText: 'Pickup stop'),
-                  items: stopRows.map((stop) => DropdownMenuItem<int>(
-                    value: (stop['stop_order'] as num).toInt(),
-                    child: Text(stop['location_name'].toString()),
-                  )).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setDialogState(() {
-                      selectedPickup = value;
-                      if (selectedDropoff <= selectedPickup) {
-                        selectedDropoff = (stopRows.last['stop_order'] as num).toInt();
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: selectedDropoff,
-                  decoration: const InputDecoration(labelText: 'Drop-off stop'),
-                  items: stopRows.where((stop) => (stop['stop_order'] as num).toInt() > selectedPickup)
-                    .map((stop) => DropdownMenuItem<int>(
-                      value: (stop['stop_order'] as num).toInt(),
-                      child: Text(stop['location_name'].toString()),
-                    )).toList(),
-                  onChanged: (value) {
-                    if (value != null) setDialogState(() => selectedDropoff = value);
-                  },
-                ),
+                Text('Pickup: ${stopRows.firstWhere((stop) => (stop['stop_order'] as num).toInt() == selectedPickup)['location_name']}'),
+                Text('Drop-off: ${stopRows.firstWhere((stop) => (stop['stop_order'] as num).toInt() == selectedDropoff)['location_name']}'),
                 const SizedBox(height: 10),
                 const Text('How many seats do you need?'),
                 Row(
@@ -1236,7 +1208,7 @@ class _HomeScreenState extends State<HomeScreen> {
         TextField(
           controller: fare,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Fare per seat (₹)'),
+          decoration: const InputDecoration(labelText: 'Fare per seat, per route leg (₹)'),
         ),
         TextField(
           controller: seats,
