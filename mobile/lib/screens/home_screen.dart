@@ -1195,6 +1195,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('${ride['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : ride['vehicle_type'] == 'car' ? '🚗 Car Taxi' : '🚌 Bus'} · ${ride['vehicle_name']} · ${ride['vehicle_number']}'),
             Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
             Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
+            if (ride['pickup_planned_at'] != null)
+              Text('Pickup stop ETA: ${DateFormat.jm().format(DateTime.parse(ride['pickup_planned_at'].toString()).toLocal())}'),
+            if (ride['dropoff_planned_at'] != null)
+              Text('Drop-off expected: ${DateFormat.jm().format(DateTime.parse(ride['dropoff_planned_at'].toString()).toLocal())}'),
             const Divider(height: 20),
             Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff15b5b3)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
             const SizedBox(height: 8),
