@@ -348,6 +348,14 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('departure_at');
       final rideRows = List<Map<String, dynamic>>.from(result).where((ride) =>
           selectedSearchVehicleType == 'all' || ride['vehicle_type'] == selectedSearchVehicleType).toList();
+      // Show the lowest driver-set fare first, then earlier departures.
+      rideRows.sort((a, b) {
+        final fareA = (num.tryParse(a['fare_per_seat']?.toString() ?? '') ?? double.infinity).toDouble();
+        final fareB = (num.tryParse(b['fare_per_seat']?.toString() ?? '') ?? double.infinity).toDouble();
+        final byFare = fareA.compareTo(fareB);
+        if (byFare != 0) return byFare;
+        return (a['departure_at'] ?? '').toString().compareTo((b['departure_at'] ?? '').toString());
+      });
       final driverIds = rideRows.map((ride) => ride['driver_id']?.toString()).whereType<String>().toSet().toList();
       final publicDrivers = driverIds.isEmpty ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(await db!.rpc('search_driver_public_profiles', params: {'p_driver_ids': driverIds}));
       final driversById = {for (final driver in publicDrivers) driver['id'].toString(): driver};
