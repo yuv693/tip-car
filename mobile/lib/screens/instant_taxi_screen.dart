@@ -557,9 +557,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
                     : '${_driverPickupDistanceKm!.toStringAsFixed(1)} km from pickup'),
                   Text(_driverPickupEtaMinutes == null
                     ? 'Calculating arrival time…'
-                    : 'Estimated arrival: ${_driverPickupEtaMinutes!.ceil()} min',
+                    : 'Estimated arrival: ${_driverPickupEtaMinutes!.ceil()} min (road estimate)',
                     style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xff174d91))),
-                  if (_etaLoading) const Text('Refreshing traffic route estimate…',
+                  if (_etaLoading) const Text('Refreshing road-route ETA…',
                     style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
                 ],
               )),
