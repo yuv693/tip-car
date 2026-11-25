@@ -45,6 +45,7 @@ select r.id,1,r.destination from public.rides r
 where (select count(*) from public.ride_stops s where s.ride_id=r.id)=1
 on conflict(ride_id,stop_order) do nothing;
 
+drop function if exists public.publish_route_ride(text,text,text,text,text,timestamptz,integer,numeric,text[]);
 create function public.publish_route_ride(
  p_vehicle_type text,p_vehicle_name text,p_vehicle_number text,
  p_origin text,p_destination text,p_departure_at timestamptz,
