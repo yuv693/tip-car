@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> rides = [];
   String message = '';
   String selectedRole = 'passenger';
+  bool roleChosen = false;
   String selectedVehicleType = 'car';
   String selectedSearchVehicleType = 'all';
   bool loading = false;
@@ -91,17 +92,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const Text('I want to use Tip Car as'),
-                  const SizedBox(height: 8),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'passenger', label: Text('Passenger'), icon: Icon(Icons.person_outline)),
-                      ButtonSegment(value: 'driver', label: Text('Driver'), icon: Icon(Icons.directions_car_outlined)),
-                    ],
-                    selected: {selectedRole},
-                    onSelectionChanged: loading
-                        ? null
-                        : (selection) => setState(() => selectedRole = selection.first),
+                  Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(color: const Color(0xffeef5ff), borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      Icon(selectedRole == 'driver' ? Icons.directions_car_filled_rounded : Icons.person_rounded, color: tipCarNavy, size: 23),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('Continuing as ${selectedRole == 'driver' ? 'Driver' : 'Customer'}',
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: tipCarNavy))),
+                      TextButton(onPressed: loading ? null : () => setState(() => roleChosen = false), child: const Text('Change')),
+                    ]),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
@@ -161,6 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         savedName = fullName;
         savedPhone = normalized;
+        roleChosen = true;
         tab = 0;
         message = 'Welcome to Tip Car, $fullName!';
       });
@@ -262,6 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
         name.text = fullName;
         phone.text = savedNumber;
         selectedRole = role;
+        roleChosen = true;
       });
     }
   }
@@ -564,9 +566,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               )
-            : db!.auth.currentUser == null
-                ? _buildRegistrationScreen()
-                : AnimatedSwitcher(
+            : db!.auth.currentUser == null && !roleChosen
+                ? _buildRoleEntryScreen()
+                : db!.auth.currentUser == null
+                    ? _buildRegistrationScreen()
+                    : AnimatedSwitcher(
                     duration: const Duration(milliseconds: 420),
                     switchInCurve: Curves.easeOutCubic,
                     switchOutCurve: Curves.easeInCubic,
@@ -600,15 +604,97 @@ class _HomeScreenState extends State<HomeScreen> {
                   tab = index;
                   message = '';
                 }),
-                destinations: const [
-                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-                  NavigationDestination(icon: Icon(Icons.route_outlined), selectedIcon: Icon(Icons.route), label: 'Rides'),
-                  NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'My Rides'),
-                  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+                destinations: [
+                  NavigationDestination(
+                    icon: Icon(selectedRole == 'driver' ? Icons.dashboard_outlined : Icons.home_outlined),
+                    selectedIcon: Icon(selectedRole == 'driver' ? Icons.dashboard : Icons.home),
+                    label: selectedRole == 'driver' ? 'Driver' : 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(selectedRole == 'driver' ? Icons.add_road_outlined : Icons.search_rounded),
+                    selectedIcon: Icon(selectedRole == 'driver' ? Icons.add_road : Icons.search),
+                    label: selectedRole == 'driver' ? 'Offer Ride' : 'Find Ride',
+                  ),
+                  const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'My Rides'),
+                  const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
                 ],
               )
             : null,
       );
+
+  Widget _buildRoleEntryScreen() => SafeArea(
+    child: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(22),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const TipCarBrand(),
+            const SizedBox(height: 28),
+            const Text('How will you use Tip Car?', textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: tipCarNavy)),
+            const SizedBox(height: 8),
+            const Text('Choose your side. You can switch roles later from Profile.',
+              textAlign: TextAlign.center, style: TextStyle(color: Color(0xff718096))),
+            const SizedBox(height: 24),
+            _roleChoiceCard(role: 'passenger', title: 'Customer',
+              subtitle: 'Book a bike or car and find rides.', icon: Icons.person_pin_circle_rounded,
+              colors: const [Color(0xff174d91), Color(0xff15b5b3)]),
+            const SizedBox(height: 14),
+            _roleChoiceCard(role: 'driver', title: 'Driver',
+              subtitle: 'Accept trips and offer your available seats.', icon: Icons.directions_car_filled_rounded,
+              colors: const [Color(0xff0b1530), Color(0xffd97706)]),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: () => setState(() => roleChosen = true),
+              style: FilledButton.styleFrom(backgroundColor: tipCarNavy, padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ]),
+        ),
+      ),
+    ),
+  );
+
+  Widget _roleChoiceCard({
+    required String role, required String title, required String subtitle,
+    required IconData icon, required List<Color> colors,
+  }) {
+    final selected = selectedRole == role;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.96, end: 1), duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => setState(() => selectedRole = role),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220), padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: selected ? const Color(0xffffb02e) : Colors.white24, width: selected ? 3 : 1),
+              boxShadow: [BoxShadow(color: colors.first.withValues(alpha: .18), blurRadius: 18, offset: const Offset(0, 8))],
+            ),
+            child: Row(children: [
+              CircleAvatar(radius: 27, backgroundColor: Colors.white.withValues(alpha: .16), child: Icon(icon, color: Colors.white, size: 29)),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              ])),
+              Icon(selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: selected ? const Color(0xffffb02e) : Colors.white70, size: 25),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildHomeTab() {
     final signedIn = db?.auth.currentUser != null;
@@ -810,7 +896,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         setState(() {
           selectedRole = role;
-          tab = 1;
+          roleChosen = true;
+          tab = 0;
           message = 'Mode changed to ${role == 'driver' ? 'Driver' : 'Passenger'}.';
         });
       } catch (error) {
@@ -849,17 +936,6 @@ class _HomeScreenState extends State<HomeScreen> {
             const Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 38),
           ]),
         ),        const SizedBox(height: 18),
-        SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 0, label: Text('Find rides'), icon: Icon(Icons.search)),
-            ButtonSegment(value: 1, label: Text('Publish ride'), icon: Icon(Icons.add_road)),
-          ],
-          selected: {tab == 1 && selectedRole == 'driver' ? 1 : 0},
-          onSelectionChanged: (selection) => setState(() {
-            selectedRole = selection.first == 1 ? 'driver' : 'passenger';
-            message = '';
-          }),
-        ),
         const SizedBox(height: 12),
         if (selectedRole == 'passenger') ..._buildRideSearch(),
         if (selectedRole == 'driver') ..._buildPublishRide(),
