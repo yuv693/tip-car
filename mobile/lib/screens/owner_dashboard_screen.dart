@@ -51,8 +51,10 @@ class _OwnerDashboardScreenState extends State<OwnerDashboardScreen> {
   }
 
   Map<String, dynamic> _presence(String id) {
-    return presences.where((p) => p['driver_id'].toString() == id)
-        .cast<Map<String, dynamic>>().firstOrNull ?? <String, dynamic>{};
+    for (final row in presences) {
+      if (row['driver_id'].toString() == id) return row;
+    }
+    return <String, dynamic>{};
   }
 
   Future<void> _edit(Map<String, dynamic> driver) async {
