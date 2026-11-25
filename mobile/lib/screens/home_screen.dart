@@ -33,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final number = TextEditingController();
   final fare = TextEditingController(text: '300');
   final seats = TextEditingController(text: '3');
+  final routeStops = TextEditingController();
 
   DateTime departure = DateTime.now().add(const Duration(days: 1));
   List<Map<String, dynamic>> rides = [];
@@ -338,16 +339,21 @@ class _HomeScreenState extends State<HomeScreen> {
       message = '';
     });
     try {
-      final result = await db!
-          .from('rides')
-          .select()
-          .inFilter('status', ['active', 'full'])
-          .ilike('origin', '%${from.text.trim()}%')
-          .ilike('destination', '%${to.text.trim()}%')
-          .gte('departure_at', DateTime.now().toUtc().toIso8601String())
-          .order('departure_at');
-      final rideRows = List<Map<String, dynamic>>.from(result).where((ride) =>
-          selectedSearchVehicleType == 'all' || ride['vehicle_type'] == selectedSearchVehicleType).toList();
+      final result = await db!.rpc('search_route_segment_matches', params: {
+        'p_origin': from.text.trim(),
+        'p_destination': to.text.trim(),
+        'p_min_seats': 1,
+      });
+      final rideRows = List<Map<String, dynamic>>.from(result)
+          .where((ride) => selectedSearchVehicleType == 'all' ||
+              ride['vehicle_type'] == selectedSearchVehicleType)
+          .map((ride) {
+            final row = Map<String, dynamic>.from(ride);
+            row['id'] = row['ride_id'];
+            row['available_seats'] = row['segment_available_seats'];
+            row['fare_per_seat'] = row['segment_fare'];
+            return row;
+          }).toList();
       // Show the lowest driver-set fare first, then earlier departures.
       rideRows.sort((a, b) {
         final fareA = (num.tryParse(a['fare_per_seat']?.toString() ?? '') ?? double.infinity).toDouble();
@@ -400,19 +406,24 @@ class _HomeScreenState extends State<HomeScreen> {
             'Your account is a passenger. Create or use a driver account to publish a ride.');
         return;
       }
-      await db!.from('rides').insert({
-        'driver_id': db!.auth.currentUser!.id,
-        'vehicle_type': selectedVehicleType,
-        'vehicle_name': vehicle.text.trim(),
-        'vehicle_number': number.text.trim(),
-        'origin': from.text.trim(),
-        'destination': to.text.trim(),
-        'departure_at': departure.toUtc().toIso8601String(),
-        'total_seats': totalSeats,
-        'available_seats': totalSeats,
-        'fare_per_seat': farePerSeat,
+      final intermediateStops = routeStops.text
+          .split(',')
+          .map((stop) => stop.trim())
+          .where((stop) => stop.isNotEmpty)
+          .toList();
+      await db!.rpc('publish_route_ride', params: {
+        'p_vehicle_type': selectedVehicleType,
+        'p_vehicle_name': vehicle.text.trim(),
+        'p_vehicle_number': number.text.trim(),
+        'p_origin': from.text.trim(),
+        'p_destination': to.text.trim(),
+        'p_departure_at': departure.toUtc().toIso8601String(),
+        'p_total_seats': totalSeats,
+        'p_fare_per_seat': farePerSeat,
+        'p_intermediate_stops': intermediateStops,
       });
-      if (mounted) setState(() => message = 'Ride published.');
+      routeStops.clear();
+      if (mounted) setState(() => message = 'Route-sharing ride published with intermediate stops.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
     }
@@ -421,6 +432,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> book(Map<String, dynamic> ride) async {
     final rideId = ride['id'] as String;
     final availableSeats = (ride['available_seats'] as num?)?.toInt() ?? 0;
+    final stopRows = List<Map<String, dynamic>>.from(await db!
+        .from('ride_stops').select('stop_order,location_name')
+        .eq('ride_id', rideId).order('stop_order'));
+    if (stopRows.length < 2) {
+      if (mounted) setState(() => message = 'This ride route is incomplete. Please refresh and try another ride.');
+      return;
+    }
+    int selectedPickup = (ride['pickup_stop_order'] as num?)?.toInt() ?? 0;
+    int selectedDropoff = (ride['dropoff_stop_order'] as num?)?.toInt() ?? stopRows.last['stop_order'] as int;
+    if (selectedPickup >= selectedDropoff) {
+      selectedPickup = 0;
+      selectedDropoff = (stopRows.last['stop_order'] as num).toInt();
+    }
     if (availableSeats < 1) {
       setState(() => message = 'Sorry, all seats on this ride are booked.');
       return;
@@ -428,7 +452,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final vpa = TextEditingController();
     int selectedSeats = 1;
     String method = 'cash';
-    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();    final choice = await showDialog<bool>(
+    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();
+    final choice = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
@@ -439,6 +464,37 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('$availableSeats seat(s) available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<int>(
+                  value: selectedPickup,
+                  decoration: const InputDecoration(labelText: 'Pickup stop'),
+                  items: stopRows.map((stop) => DropdownMenuItem<int>(
+                    value: (stop['stop_order'] as num).toInt(),
+                    child: Text(stop['location_name'].toString()),
+                  )).toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setDialogState(() {
+                      selectedPickup = value;
+                      if (selectedDropoff <= selectedPickup) {
+                        selectedDropoff = (stopRows.last['stop_order'] as num).toInt();
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<int>(
+                  value: selectedDropoff,
+                  decoration: const InputDecoration(labelText: 'Drop-off stop'),
+                  items: stopRows.where((stop) => (stop['stop_order'] as num).toInt() > selectedPickup)
+                    .map((stop) => DropdownMenuItem<int>(
+                      value: (stop['stop_order'] as num).toInt(),
+                      child: Text(stop['location_name'].toString()),
+                    )).toList(),
+                  onChanged: (value) {
+                    if (value != null) setDialogState(() => selectedDropoff = value);
+                  },
+                ),
                 const SizedBox(height: 10),
                 const Text('How many seats do you need?'),
                 Row(
@@ -503,11 +559,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     try {
-      // The database RPC locks the ride row and rechecks remaining seats,
-      // so two passengers cannot reserve the same final seat simultaneously.
+      // Server-side booking locks the ride and checks every overlapping
+      // route segment, preventing two passengers from taking the same seat.
       final bookingId = await db!.rpc(
-        'create_booking',
-        params: {'p_ride_id': rideId, 'p_seats': selectedSeats},
+        'create_route_segment_booking',
+        params: {
+          'p_ride_id': rideId,
+          'p_pickup_stop_order': selectedPickup,
+          'p_dropoff_stop_order': selectedDropoff,
+          'p_seats': selectedSeats,
+        },
       ) as String;
       await db!.rpc('set_my_booking_payment_method', params: {
         'p_booking_id': bookingId,
@@ -1121,6 +1182,10 @@ class _HomeScreenState extends State<HomeScreen> {
           final driverName = driver['full_name']?.toString().trim();
           return Card(margin: const EdgeInsets.only(top: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${ride['origin']} → ${ride['destination']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            if ((ride['pickup_stop_order'] as num?)?.toInt() != 0 ||
+                (ride['dropoff_stop_order'] as num?)?.toInt() != 1)
+              Text('Your segment: ${from.text.trim()} → ${to.text.trim()}',
+                style: const TextStyle(color: Color(0xff174d91), fontWeight: FontWeight.w700)),
             const SizedBox(height: 7),
             Text('${ride['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : ride['vehicle_type'] == 'car' ? '🚗 Car Taxi' : '🚌 Bus'} · ${ride['vehicle_name']} · ${ride['vehicle_number']}'),
             Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
@@ -1158,6 +1223,14 @@ class _HomeScreenState extends State<HomeScreen> {
         TextField(
           controller: number,
           decoration: const InputDecoration(labelText: 'Vehicle number'),
+        ),
+        TextField(
+          controller: routeStops,
+          decoration: const InputDecoration(
+            labelText: 'Intermediate stops (optional)',
+            hintText: 'Rajkot, Ahmedabad',
+            helperText: 'Enter stops in travel order, separated by commas.',
+          ),
         ),
         TextField(
           controller: fare,
