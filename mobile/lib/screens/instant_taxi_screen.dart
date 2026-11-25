@@ -210,6 +210,21 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     });
   }
 
+  bool _isRequestForThisDriver(Map<String, dynamic> request) {
+    if (request['vehicle_type']?.toString() != _vehicleType) return false;
+    final pickupLat = request['pickup_latitude'];
+    final pickupLon = request['pickup_longitude'];
+    final driverPosition = _myPosition;
+    if (pickupLat is! num || pickupLon is! num || driverPosition == null) {
+      return false;
+    }
+    final pickup = LatLng(pickupLat.toDouble(), pickupLon.toDouble());
+    final distanceKm = const Distance().as(
+      LengthUnit.Kilometer, driverPosition, pickup,
+    );
+    return distanceKm <= 8;
+  }
+
   Future<void> _refreshDriverRequests({bool force = false}) async {
     final now = DateTime.now();
     if (!force && _lastInboxRefresh != null &&
@@ -222,7 +237,8 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
           .eq('status', 'searching').order('created_at', ascending: false);
       if (!mounted) return;
       setState(() => _incoming = List<Map<String, dynamic>>.from(rows)
-          .where((r) => r['driver_id'] == null).toList());
+          .where((r) => r['driver_id'] == null && _isRequestForThisDriver(r))
+          .toList());
     } catch (e) {
       if (mounted) setState(() => _message = 'Could not refresh nearby requests: $e');
     }
@@ -236,7 +252,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
       final visible = rows.map((r) => Map<String, dynamic>.from(r)).toList();
       setState(() {
         _incoming = visible.where((r) => r['status'] == 'searching' &&
-            r['driver_id'] == null).toList();
+            r['driver_id'] == null && _isRequestForThisDriver(r)).toList();
         final active = visible.where((r) => r['driver_id'] == userId &&
             ['accepted','arrived','in_progress'].contains(r['status'])).toList();
         _activeRequest = active.isEmpty ? null : active.first;
@@ -661,15 +677,79 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
             const Text('Nearby ride requests', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
             if (!_online) const Text('Go online to see requests.'),
             if (_online && _incoming.isEmpty) const Text('Waiting for nearby passengers…'),
-            ..._incoming.map((r) => Card(child: ListTile(
-              leading: Icon(r['vehicle_type'] == 'bike' ? Icons.two_wheeler : Icons.directions_car),
-              title: Text('${r['pickup_label']} → ${r['destination_label']}'),
-              subtitle: const Text('Within your 8 km matching area'),
-              trailing: FilledButton(
-                onPressed: _busy ? null : () => _accept(r),
-                child: const Text('Accept'),
-              ),
-            ))),
+            ..._incoming.map((r) {
+              final fare = (r['estimated_fare'] as num?)?.toDouble();
+              final routeKm = (r['route_distance_km'] as num?)?.toDouble();
+              final eta = (r['route_duration_minutes'] as num?)?.toDouble();
+              final pickupLat = (r['pickup_latitude'] as num?)?.toDouble();
+              final pickupLon = (r['pickup_longitude'] as num?)?.toDouble();
+              final pickupDistance = _myPosition != null &&
+                      pickupLat != null && pickupLon != null
+                  ? const Distance().as(
+                      LengthUnit.Kilometer,
+                      _myPosition!,
+                      LatLng(pickupLat, pickupLon),
+                    )
+                  : null;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(
+                          r['vehicle_type'] == 'bike'
+                              ? Icons.two_wheeler : Icons.directions_car,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(
+                          r['vehicle_type'] == 'bike' ? 'Bike ride request' : 'Car ride request',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        )),
+                        if (fare != null) Text(
+                          '₹${fare.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                        ),
+                      ]),
+                      const Divider(),
+                      const Text('PICKUP', style: TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w800, color: Colors.blueGrey,
+                      )),
+                      Text((r['pickup_label'] ?? 'Customer location').toString()),
+                      if (pickupDistance != null) Text(
+                        'Your distance to pickup: ${pickupDistance.toStringAsFixed(1)} km',
+                      ),
+                      const SizedBox(height: 8),
+                      const Text('DESTINATION', style: TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w800, color: Colors.blueGrey,
+                      )),
+                      Text((r['destination_label'] ?? 'Not provided').toString()),
+                      if (routeKm != null || eta != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            '${routeKm == null ? '' : 'Trip: ${routeKm.toStringAsFixed(1)} km'}'
+                            '${routeKm != null && eta != null ? ' · ' : ''}'
+                            '${eta == null ? '' : 'ETA: ${eta.toStringAsFixed(0)} min'}',
+                            style: const TextStyle(color: Colors.blueGrey),
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _busy ? null : () => _accept(r),
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: const Text('Accept this ride'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
           ],
           if (_message.isNotEmpty)
             Padding(padding: const EdgeInsets.only(top: 12),
