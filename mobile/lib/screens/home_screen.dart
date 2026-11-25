@@ -1171,6 +1171,25 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerDashboardScreen())),
             ),
           ),
+        if (selectedRole == 'admin')
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(backgroundColor: Color(0xfffff1e5), child: Icon(Icons.admin_panel_settings, color: Color(0xffd97706))),
+              title: const Text('Owner Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: const Text('View and update all driver details'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerDashboardScreen())),
+            ),
+          )
+        else
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(backgroundColor: Color(0xffeef5ff), child: Icon(Icons.lock_open_outlined, color: Color(0xff174d91))),
+              title: const Text('Owner setup'),
+              subtitle: const Text('Activate your private driver-management dashboard'),
+              onTap: loading ? null : _activateOwnerAccess,
+            ),
+          ),
         Card(
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffffeeee), child: Icon(Icons.sos_rounded, color: Colors.red)),
