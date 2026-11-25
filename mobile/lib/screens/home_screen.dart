@@ -243,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final existingPhone = existing?['phone']?.toString() ?? '';
     final existingRole = existing?['role']?.toString();
     final role = existingRole == 'admin' || (existingRole != null && !allowRoleUpdate)
-        ? existingRole
+        ? (existingRole ?? selectedRole)
         : selectedRole;
     final enteredName = name.text.trim();
     final fullName = enteredName.isNotEmpty ? enteredName : existingName;
