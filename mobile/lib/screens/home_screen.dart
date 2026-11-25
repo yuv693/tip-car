@@ -14,6 +14,7 @@ import 'driver_benefits_screen.dart';
 import 'booking_history_screen.dart';
 import 'instant_taxi_screen.dart';
 import 'sos_screen.dart';
+import 'owner_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool configured;
@@ -241,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final existingName = existing?['full_name']?.toString() ?? '';
     final existingPhone = existing?['phone']?.toString() ?? '';
     final existingRole = existing?['role']?.toString();
-    final role = existingRole != null && !allowRoleUpdate
+    final role = existingRole == 'admin' || (existingRole != null && !allowRoleUpdate)
         ? existingRole
         : selectedRole;
     final enteredName = name.text.trim();
@@ -1120,9 +1121,19 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff15b5b3))),
             title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text('${selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
+            subtitle: Text('${selectedRole == 'admin' ? 'Owner' : selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
           ),
         ),
+        if (selectedRole == 'admin')
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(backgroundColor: Color(0xfffff1e5), child: Icon(Icons.admin_panel_settings, color: Color(0xffd97706))),
+              title: const Text('Owner Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
+              subtitle: const Text('View and update all driver details'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerDashboardScreen())),
+            ),
+          ),
         Card(
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffffeeee), child: Icon(Icons.sos_rounded, color: Colors.red)),
