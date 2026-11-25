@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final fare = TextEditingController(text: '300');
   final seats = TextEditingController(text: '3');
   final routeStops = TextEditingController();
+  final routeStopTimes = TextEditingController();
 
   DateTime departure = DateTime.now().add(const Duration(days: 1));
   List<Map<String, dynamic>> rides = [];
@@ -411,6 +412,34 @@ class _HomeScreenState extends State<HomeScreen> {
           .map((stop) => stop.trim())
           .where((stop) => stop.isNotEmpty)
           .toList();
+      final timeLabels = routeStopTimes.text.trim().isEmpty
+          ? <String>[]
+          : routeStopTimes.text.split(',').map((value) => value.trim()).toList();
+      if (timeLabels.isNotEmpty && timeLabels.length != intermediateStops.length) {
+        setState(() => message = 'Enter one arrival time for each intermediate stop, in the same order.');
+        return;
+      }
+      final arrivalTimes = <String>[];
+      DateTime previousArrival = departure;
+      for (final label in timeLabels) {
+        final parts = label.split(':');
+        if (parts.length != 2) {
+          setState(() => message = 'Use 24-hour arrival times like 18:30, 21:00.');
+          return;
+        }
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+          setState(() => message = 'Check stop arrival times. Use HH:mm format.');
+          return;
+        }
+        var arrival = DateTime(departure.year, departure.month, departure.day, hour, minute);
+        while (arrival.isBefore(previousArrival)) {
+          arrival = arrival.add(const Duration(days: 1));
+        }
+        previousArrival = arrival;
+        arrivalTimes.add(arrival.toUtc().toIso8601String());
+      }
       await db!.rpc('publish_route_ride', params: {
         'p_vehicle_type': selectedVehicleType,
         'p_vehicle_name': vehicle.text.trim(),
@@ -421,8 +450,10 @@ class _HomeScreenState extends State<HomeScreen> {
         'p_total_seats': totalSeats,
         'p_fare_per_seat': farePerSeat,
         'p_intermediate_stops': intermediateStops,
+        'p_intermediate_arrivals': arrivalTimes,
       });
       routeStops.clear();
+      routeStopTimes.clear();
       if (mounted) setState(() => message = 'Route-sharing ride published with intermediate stops.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
@@ -589,6 +620,7 @@ class _HomeScreenState extends State<HomeScreen> {
     fare.dispose();
     seats.dispose();
     routeStops.dispose();
+    routeStopTimes.dispose();
     super.dispose();
   }
 
@@ -1203,6 +1235,14 @@ class _HomeScreenState extends State<HomeScreen> {
             labelText: 'Intermediate stops (optional)',
             hintText: 'Rajkot, Ahmedabad',
             helperText: 'Enter stops in travel order, separated by commas.',
+          ),
+        ),
+        TextField(
+          controller: routeStopTimes,
+          decoration: const InputDecoration(
+            labelText: 'Arrival time at each stop (optional)',
+            hintText: '18:30, 21:00',
+            helperText: '24-hour HH:mm format, matching the stop order above.',
           ),
         ),
         TextField(
