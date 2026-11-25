@@ -53,7 +53,7 @@ create table if not exists private.tipcar_owner_activation_codes (
 );
 revoke all on private.tipcar_owner_activation_codes from public, anon, authenticated;
 
-create or replace function public.claim_tipcar_owner(p_activation_code text)
+create or replace function private.claim_tipcar_owner(p_activation_code text)
 returns boolean
 language plpgsql
 security definer
@@ -84,6 +84,17 @@ begin
   where activation_code = v_code;
   return true;
 end;
+$$;
+revoke all on function private.claim_tipcar_owner(text) from public, anon;
+grant execute on function private.claim_tipcar_owner(text) to authenticated;
+
+create or replace function public.claim_tipcar_owner(p_activation_code text)
+returns boolean
+language sql
+security invoker
+set search_path = pg_catalog, public, private
+as $$
+  select private.claim_tipcar_owner(p_activation_code);
 $$;
 revoke all on function public.claim_tipcar_owner(text) from public, anon;
 grant execute on function public.claim_tipcar_owner(text) to authenticated;
