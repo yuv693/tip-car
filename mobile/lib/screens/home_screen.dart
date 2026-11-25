@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int tab = 0;
   String savedName = '';
   String savedPhone = '';
+  bool _locationPromptStarted = false;
 
   SupabaseClient? get db =>
       widget.configured ? Supabase.instance.client : null;
@@ -268,6 +270,48 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _restoreSavedProfile();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkLocationOnLaunch());
+  }
+
+  Future<void> _checkLocationOnLaunch() async {
+    if (_locationPromptStarted || !mounted) return;
+    _locationPromptStarted = true;
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (!mounted) return;
+    if (permission == LocationPermission.deniedForever) {
+      final openSettings = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Allow Tip Car location'),
+          content: const Text('Location permission is blocked. Open Android app settings and allow location so Tip Car can find pickup points and nearby rides.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Not now')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Open settings')),
+          ],
+        ),
+      );
+      if (openSettings == true) await Geolocator.openAppSettings();
+      return;
+    }
+    if (permission == LocationPermission.denied) return;
+
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!mounted || serviceEnabled) return;
+    final openLocation = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Turn on GPS / Location'),
+        content: const Text('Tip Car needs your device location to find pickup points and nearby rides. Turn on Location in Android settings.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Not now')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Turn on location')),
+        ],
+      ),
+    );
+    if (openLocation == true) await Geolocator.openLocationSettings();
   }
 
   Future<void> _restoreSavedProfile() async {
