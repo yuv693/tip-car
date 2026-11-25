@@ -44,6 +44,10 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   double? _routeDistanceKm;
   double? _routeDurationMinutes;
   double? _estimatedFare;
+  double? _driverPickupDistanceKm;
+  double? _driverPickupEtaMinutes;
+  DateTime? _lastEtaCalculation;
+  bool _etaLoading = false;
   DateTime? _lastInboxRefresh;
   StreamSubscription<Position>? _gps;
   Timer? _heartbeat;
@@ -202,12 +206,46 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         (row['longitude'] as num).toDouble(),
       );
       setState(() => _driverPosition = point);
+      _refreshDriverPickupEta(point);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _mapController.move(point, 15);
       });
     }, onError: (Object e) {
       if (mounted) setState(() => _message = 'Live driver location unavailable: $e');
     });
+  }
+
+  Future<void> _refreshDriverPickupEta(LatLng driverPoint) async {
+    final request = _myRequest;
+    if (request == null ||
+        !['accepted', 'arrived'].contains(request['status']?.toString())) {
+      return;
+    }
+    final lat = request['pickup_latitude'];
+    final lon = request['pickup_longitude'];
+    if (lat is! num || lon is! num) return;
+    final now = DateTime.now();
+    if (_lastEtaCalculation != null &&
+        now.difference(_lastEtaCalculation!) < const Duration(seconds: 30)) {
+      return;
+    }
+    _lastEtaCalculation = now;
+    if (mounted) setState(() => _etaLoading = true);
+    try {
+      final leg = await TaxiRouteService.estimateLeg(
+        from: driverPoint,
+        to: LatLng(lat.toDouble(), lon.toDouble()),
+      );
+      if (!mounted) return;
+      setState(() {
+        _driverPickupDistanceKm = leg.distanceKm;
+        _driverPickupEtaMinutes = leg.durationMinutes;
+      });
+    } catch (_) {
+      // Keep the last successful ETA visible if the public routing service is busy.
+    } finally {
+      if (mounted) setState(() => _etaLoading = false);
+    }
   }
 
   bool _isRequestForThisDriver(Map<String, dynamic> request) {
@@ -499,8 +537,35 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
         if (status == 'searching' || status == 'accepted')
           TextButton.icon(onPressed: _cancelRequest,
             icon: const Icon(Icons.close), label: const Text('Cancel request')),
-        if (_driverPosition != null) Text(
-          'Driver location: ${_driverPosition!.latitude.toStringAsFixed(5)}, ${_driverPosition!.longitude.toStringAsFixed(5)}'),
+        if (_driverPosition != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xffeaf2ff),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(children: [
+              const Icon(Icons.near_me_rounded, color: Color(0xff174d91), size: 26),
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Driver live location', style: TextStyle(fontWeight: FontWeight.w800)),
+                  Text(_driverPickupDistanceKm == null
+                    ? 'Updating road distance to pickup…'
+                    : '${_driverPickupDistanceKm!.toStringAsFixed(1)} km from pickup'),
+                  Text(_driverPickupEtaMinutes == null
+                    ? 'Calculating arrival time…'
+                    : 'Estimated arrival: ${_driverPickupEtaMinutes!.ceil()} min',
+                    style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xff174d91))),
+                  if (_etaLoading) const Text('Refreshing traffic route estimate…',
+                    style: TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                ],
+              )),
+            ]),
+          ),
+        ],
       ]),
     ));
   }
