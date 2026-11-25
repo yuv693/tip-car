@@ -1075,6 +1075,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+  Future<void> _activateOwnerAccess() async {
+    final code = TextEditingController();
+    final accepted = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Activate Tip Car Owner'),
+        content: TextField(
+          controller: code,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'One-time owner activation code'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Activate')),
+        ],
+      ),
+    );
+    if (accepted != true) { code.dispose(); return; }
+    try {
+      setState(() { loading = true; message = ''; });
+      await db!.rpc('claim_tipcar_owner', params: {'p_activation_code': code.text.trim()});
+      if (!mounted) return;
+      setState(() {
+        selectedRole = 'admin';
+        roleChosen = true;
+        tab = 3;
+        message = 'Owner dashboard activated on this account.';
+      });
+    } catch (e) {
+      if (mounted) setState(() => message = 'Owner activation failed: $e');
+    } finally {
+      code.dispose();
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
     final metadata = user?.userMetadata ?? <String, dynamic>{};
