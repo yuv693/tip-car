@@ -566,14 +566,32 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             : db!.auth.currentUser == null
                 ? _buildRegistrationScreen()
-                : IndexedStack(
-                    index: tab,
-                    children: [
-                      _buildHomeTab(),
-                      _buildRidesTab(),
-                      const BookingHistoryScreen(),
-                      _buildProfileTab(),
-                    ],
+                : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 420),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.035, 0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ));
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(tab),
+                      child: [
+                        _buildHomeTab(),
+                        _buildRidesTab(),
+                        const BookingHistoryScreen(),
+                        _buildProfileTab(),
+                      ][tab],
+                    ),
                   ),
         bottomNavigationBar: widget.configured && db!.auth.currentUser != null
             ? NavigationBar(
@@ -597,7 +615,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: [
-        Container(
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.94, end: 1),
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeOutBack,
+          builder: (context, scale, child) => Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: child,
+          ),
+          child: Container(
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
@@ -642,6 +669,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 _heroPill(Icons.route_rounded, 'Your route'),
               ]),
             ],
+          ),
           ),
         ),
         const SizedBox(height: 18),
