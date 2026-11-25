@@ -616,6 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
     number.dispose();
     fare.dispose();
     seats.dispose();
+    routeStops.dispose();
     super.dispose();
   }
 
