@@ -14,7 +14,6 @@ import 'driver_benefits_screen.dart';
 import 'booking_history_screen.dart';
 import 'instant_taxi_screen.dart';
 import 'sos_screen.dart';
-import 'owner_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final bool configured;
@@ -403,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .select('role')
           .eq('id', db!.auth.currentUser!.id)
           .single();
-      if (!['driver', 'admin'].contains(profile['role'])) {
+      if (profile['role'] != 'driver') {
         setState(() => message =
             'Your account is a passenger. Create or use a driver account to publish a ride.');
         return;
@@ -1076,42 +1075,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-  Future<void> _activateOwnerAccess() async {
-    final code = TextEditingController();
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Activate Tip Car Owner'),
-        content: TextField(
-          controller: code,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: 'One-time owner activation code'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Activate')),
-        ],
-      ),
-    );
-    if (accepted != true) { code.dispose(); return; }
-    try {
-      setState(() { loading = true; message = ''; });
-      await db!.rpc('claim_tipcar_owner', params: {'p_activation_code': code.text.trim()});
-      if (!mounted) return;
-      setState(() {
-        selectedRole = 'admin';
-        roleChosen = true;
-        tab = 3;
-        message = 'Owner dashboard activated on this account.';
-      });
-    } catch (e) {
-      if (mounted) setState(() => message = 'Owner activation failed: $e');
-    } finally {
-      code.dispose();
-      if (mounted) setState(() => loading = false);
-    }
-  }
-
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
     final metadata = user?.userMetadata ?? <String, dynamic>{};
@@ -1158,38 +1121,9 @@ class _HomeScreenState extends State<HomeScreen> {
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffeaf1ff), child: Icon(Icons.badge_outlined, color: Color(0xff15b5b3))),
             title: Text(accountLabel, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text('${selectedRole == 'admin' ? 'Owner' : selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
+            subtitle: Text('${selectedRole == 'driver' ? 'Driver' : 'Passenger'} - $phoneLabel'),
           ),
         ),
-        if (selectedRole == 'admin')
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(backgroundColor: Color(0xfffff1e5), child: Icon(Icons.admin_panel_settings, color: Color(0xffd97706))),
-              title: const Text('Owner Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: const Text('View and update all driver details'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerDashboardScreen())),
-            ),
-          ),
-        if (selectedRole == 'admin')
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(backgroundColor: Color(0xfffff1e5), child: Icon(Icons.admin_panel_settings, color: Color(0xffd97706))),
-              title: const Text('Owner Dashboard', style: TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: const Text('View and update all driver details'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OwnerDashboardScreen())),
-            ),
-          )
-        else
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(backgroundColor: Color(0xffeef5ff), child: Icon(Icons.lock_open_outlined, color: Color(0xff174d91))),
-              title: const Text('Owner setup'),
-              subtitle: const Text('Activate your private driver-management dashboard'),
-              onTap: loading ? null : _activateOwnerAccess,
-            ),
-          ),
         Card(
           child: ListTile(
             leading: const CircleAvatar(backgroundColor: Color(0xffffeeee), child: Icon(Icons.sos_rounded, color: Colors.red)),
