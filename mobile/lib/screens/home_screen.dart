@@ -1369,7 +1369,7 @@ class _HomeScreenState extends State<HomeScreen> {
       value = route.group(2)!.trim();
     } else {
       value = value.replaceFirst(
-        RegExp(r'^(?:mujhe|please|take me|i want to go|i want to travel|go|to|mare|મારે|मुझे)\s+', caseSensitive: false),
+        RegExp(r'^(?:mujhe|please|take me|i want to go to|i want to go|i want to travel to|i want to travel|go|to|mare|મારે|मुझे)\s+', caseSensitive: false),
         '',
       );
     }
