@@ -55,6 +55,9 @@ class _OwnerGateState extends State<OwnerGate> {
   Future<void> _activate() async {
     setState(() { busy = true; error = ''; });
     try {
+      final user = db.auth.currentUser;
+      if (user == null) throw Exception('Owner session expired. Reopen the app.');
+      await db.from('profiles').upsert({'id': user.id, 'full_name': 'Tip Car Owner', 'role': 'passenger'}, onConflict: 'id');
       await db.rpc('claim_tipcar_owner', params: {'p_activation_code': code.text.trim()});
       if (mounted) setState(() => activated = true);
     } catch (e) {
