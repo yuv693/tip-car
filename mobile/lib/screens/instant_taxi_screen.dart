@@ -44,6 +44,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   Map<String, dynamic>? _myRequest;
   Map<String, dynamic>? _activeRequest;
   List<Map<String, dynamic>> _incoming = [];
+  List<Map<String, dynamic>> _offers = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _offersStream;
+  String? _offersRequestId;
   LatLng? _myPosition;
   LatLng? _driverPosition;
   LatLng? _destinationPosition;
@@ -199,10 +202,87 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
       final id = _myRequest?['id']?.toString();
       if (id != null) {
         _watchRequestLocation(id);
+        _watchRideOffers(id);
+      } else {
+        _offersStream?.cancel();
+        _offersRequestId = null;
+        if (mounted) setState(() => _offers = []);
       }
     }, onError: (Object e) {
       if (mounted) setState(() => _message = 'Ride updates unavailable: $e');
     });
+  }
+
+  void _watchRideOffers(String requestId) {
+    if (_offersRequestId == requestId && _offersStream != null) return;
+    _offersStream?.cancel();
+    _offersRequestId = requestId;
+    _offersStream = db.from('ride_request_offers').stream(primaryKey: ['id'])
+        .eq('request_id', requestId).listen((rows) {
+      if (!mounted) return;
+      final offers = rows.map((r) => Map<String, dynamic>.from(r)).toList()
+        ..sort((a, b) => ((a['fare'] as num?)?.toDouble() ?? double.infinity)
+            .compareTo((b['fare'] as num?)?.toDouble() ?? double.infinity));
+      setState(() => _offers = offers);
+    }, onError: (Object e) {
+      if (mounted) setState(() => _message = 'Driver offers unavailable: $e');
+    });
+  }
+
+  Future<void> _chooseOffer(Map<String, dynamic> offer) async {
+    if (_myRequest == null || _busy) return;
+    setState(() { _busy = true; _message = ''; });
+    try {
+      await db.rpc('select_ride_request_offer', params: {'p_offer_id': offer['id']});
+      if (!mounted) return;
+      setState(() => _message = 'Driver selected! Fare ₹${(offer['fare'] as num).toStringAsFixed(0)} confirmed.');
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not select this offer: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _sendFareOffer(Map<String, dynamic> request) async {
+    final controller = TextEditingController(
+      text: ((request['estimated_fare'] as num?)?.toDouble() ?? 100).toStringAsFixed(0),
+    );
+    final fare = await showDialog<double>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Send your ride fare'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(prefixText: '₹ ', labelText: 'Your total fare'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () {
+            final value = double.tryParse(controller.text.trim());
+            if (value != null && value > 0) Navigator.pop(dialogContext, value);
+          }, child: const Text('Send offer')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (fare == null) return;
+    setState(() { _busy = true; _message = ''; });
+    try {
+      await db.from('ride_request_offers').upsert({
+        'request_id': request['id'],
+        'driver_id': userId,
+        'fare': fare,
+        'status': 'pending',
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'request_id,driver_id');
+      if (mounted) setState(() => _message = 'Fare offer ₹${fare.toStringAsFixed(0)} sent. Passenger can compare offers.');
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not send fare offer: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _watchRequestLocation(String requestId) {
@@ -520,6 +600,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     _heartbeat?.cancel();
     _requestStream?.cancel();
     _locationStream?.cancel();
+    _offersStream?.cancel();
     _pickup.dispose();
     _destination.dispose();
     _vehicleName.dispose();
@@ -638,6 +719,32 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
               ]),
             )),
             if (_myRequest != null) _statusCard(_myRequest!),
+            if (_myRequest != null && _myRequest!['status'] == 'searching') ...[
+              const SizedBox(height: 8),
+              const Text('Driver fare offers · cheapest first', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              if (_offers.isEmpty) const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                child: Text('Waiting for nearby drivers to send their fares…'),
+              ),
+              ..._offers.where((o) => o['status'] == 'pending').map((offer) {
+                final amount = (offer['fare'] as num?)?.toDouble() ?? 0;
+                final isCheapest = _offers.where((o) => o['status'] == 'pending')
+                    .every((o) => ((o['fare'] as num?)?.toDouble() ?? double.infinity) >= amount);
+                return Card(
+                  child: ListTile(
+                    leading: Icon(isCheapest ? Icons.price_check : Icons.local_taxi,
+                      color: isCheapest ? Colors.green : null, size: 30),
+                    title: Text('₹${amount.toStringAsFixed(0)}',
+                      style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+                    subtitle: Text(isCheapest ? 'Lowest fare offer' : 'Driver fare offer'),
+                    trailing: FilledButton(
+                      onPressed: _busy ? null : () => _chooseOffer(offer),
+                      child: const Text('Choose'),
+                    ),
+                  ),
+                );
+              }),
+            ],
             if (_myRequest != null && _myRequest!['status'] == 'searching')
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).push(MaterialPageRoute(
@@ -818,9 +925,9 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
-                          onPressed: _busy ? null : () => _accept(r),
-                          icon: const Icon(Icons.check_circle_outline),
-                          label: const Text('Accept this ride'),
+                          onPressed: _busy ? null : () => _sendFareOffer(r),
+                          icon: const Icon(Icons.currency_rupee),
+                          label: const Text('Send your fare offer'),
                         ),
                       ),
                     ],
