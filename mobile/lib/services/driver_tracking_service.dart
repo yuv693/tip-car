@@ -13,7 +13,6 @@ class TipCarDriverTrackingService {
   static StreamSubscription<Position>? _gps;
   static Timer? _heartbeat;
   static String? _driverId;
-  static DateTime? _lastPositionAt;
   static void Function(Position)? _onPosition;
   static void Function(Object)? _onError;
   static Future<void>? _starting;
@@ -70,7 +69,6 @@ class TipCarDriverTrackingService {
       ),
     ).listen(
       (position) {
-        _lastPositionAt = DateTime.now();
         _publishPosition(driverId, position);
         _onPosition?.call(position);
       },
@@ -132,7 +130,6 @@ class TipCarDriverTrackingService {
     _heartbeat?.cancel();
     _heartbeat = null;
     _driverId = null;
-    _lastPositionAt = null;
     _onPosition = null;
     _onError = null;
   }
