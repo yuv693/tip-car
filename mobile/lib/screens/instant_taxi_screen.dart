@@ -502,26 +502,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
     if (_incoming.isEmpty) await _refreshDriverRequests();
   }
 
-  Future<void> _accept(Map<String, dynamic> request) async {
-    setState(() { _busy = true; _message = ''; });
-    try {
-      final result = await db.from('ride_requests').update({
-        'driver_id': userId,
-        'status': 'accepted',
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', request['id']).eq('status', 'searching')
-          .select().maybeSingle();
-      if (!mounted) return;
-      setState(() => _message = result == null
-          ? 'Another driver already accepted this request.'
-          : 'Ride accepted. Navigate to the passenger pickup point.');
-    } catch (e) {
-      if (mounted) setState(() => _message = 'Accept failed: $e');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
   Future<void> _advanceRide() async {
     final active = _activeRequest;
     if (active == null) return;
