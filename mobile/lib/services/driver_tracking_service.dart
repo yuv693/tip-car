@@ -25,15 +25,17 @@ class TipCarDriverTrackingService {
     _onPosition = onPosition;
     _onError = onError;
     if (_driverId == driverId && _gps != null) return;
-    if (_starting != null) {
-      await _starting;
+    final pendingStart = _starting;
+    if (pendingStart != null) {
+      await pendingStart;
       if (_driverId == driverId && _gps != null) return;
     }
-    _starting = _startInternal(driverId);
+    final operation = _startInternal(driverId);
+    _starting = operation;
     try {
-      await _starting;
+      await operation;
     } finally {
-      _starting = null;
+      if (identical(_starting, operation)) _starting = null;
     }
   }
 
