@@ -454,9 +454,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     await search();
     if (mounted && rides.isEmpty) {
-      setState(() => _voiceStatus = 'No matching scheduled rides found. Try Instant Car below.');
+      setState(() => _voiceStatus = 'No scheduled ride found. Opening Instant Ride…');
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => InstantTaxiScreen(
+          configured: widget.configured,
+          initialDestination: destination,
+          initialVehicleType: selectedSearchVehicleType == 'bike' ? 'bike' : 'car',
+        ),
+      ));
     } else if (mounted) {
-      setState(() => _voiceStatus = 'Matching rides found. Cheapest options are shown first.');
+      setState(() => _voiceStatus = 'Matching scheduled rides found. Cheapest options are shown first. Instant Ride is also available below.');
     }
   }
 
