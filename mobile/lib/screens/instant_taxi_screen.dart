@@ -12,7 +12,14 @@ import 'alternative_ride_screen.dart';
 
 class InstantTaxiScreen extends StatefulWidget {
   final bool configured;
-  const InstantTaxiScreen({super.key, required this.configured});
+  final String? initialDestination;
+  final String? initialVehicleType;
+  const InstantTaxiScreen({
+    super.key,
+    required this.configured,
+    this.initialDestination,
+    this.initialVehicleType,
+  });
 
   @override
   State<InstantTaxiScreen> createState() => _InstantTaxiScreenState();
@@ -58,6 +65,12 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialDestination?.trim().isNotEmpty == true) {
+      _destination.text = widget.initialDestination!.trim();
+    }
+    if (widget.initialVehicleType == 'bike' || widget.initialVehicleType == 'car') {
+      _vehicleType = widget.initialVehicleType!;
+    }
     _loadProfile();
   }
 
