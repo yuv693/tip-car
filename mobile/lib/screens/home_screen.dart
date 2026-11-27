@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -33,11 +35,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final number = TextEditingController();
   final fare = TextEditingController(text: '300');
   final seats = TextEditingController(text: '3');
+  final routeStops = TextEditingController();
+  final routeStopTimes = TextEditingController();
 
   DateTime departure = DateTime.now().add(const Duration(days: 1));
   List<Map<String, dynamic>> rides = [];
   String message = '';
   String selectedRole = 'passenger';
+  bool roleChosen = false;
   String selectedVehicleType = 'car';
   String selectedSearchVehicleType = 'all';
   bool loading = false;
@@ -47,6 +52,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String savedName = '';
   String savedPhone = '';
   bool _locationPromptStarted = false;
+  final SpeechToText _speech = SpeechToText();
+  bool _voiceListening = false;
+  String _voiceText = '';
+  String _voiceStatus = 'Tap and say where you want to go';
 
   SupabaseClient? get db =>
       widget.configured ? Supabase.instance.client : null;
@@ -91,17 +100,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  const Text('I want to use Tip Car as'),
-                  const SizedBox(height: 8),
-                  SegmentedButton<String>(
-                    segments: const [
-                      ButtonSegment(value: 'passenger', label: Text('Passenger'), icon: Icon(Icons.person_outline)),
-                      ButtonSegment(value: 'driver', label: Text('Driver'), icon: Icon(Icons.directions_car_outlined)),
-                    ],
-                    selected: {selectedRole},
-                    onSelectionChanged: loading
-                        ? null
-                        : (selection) => setState(() => selectedRole = selection.first),
+                  Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(color: const Color(0xffeef5ff), borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      Icon(selectedRole == 'driver' ? Icons.directions_car_filled_rounded : Icons.person_rounded, color: tipCarNavy, size: 23),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text('Continuing as ${selectedRole == 'driver' ? 'Driver' : 'Customer'}',
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: tipCarNavy))),
+                      TextButton(onPressed: loading ? null : () => setState(() => roleChosen = false), child: const Text('Change')),
+                    ]),
                   ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
@@ -161,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         savedName = fullName;
         savedPhone = normalized;
+        roleChosen = true;
         tab = 0;
         message = 'Welcome to Tip Car, $fullName!';
       });
@@ -238,8 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final existingName = existing?['full_name']?.toString() ?? '';
     final existingPhone = existing?['phone']?.toString() ?? '';
     final existingRole = existing?['role']?.toString();
-    final role = existingRole != null && !allowRoleUpdate
-        ? existingRole
+    final role = existingRole == 'admin' || (existingRole != null && !allowRoleUpdate)
+        ? (existingRole ?? selectedRole)
         : selectedRole;
     final enteredName = name.text.trim();
     final fullName = enteredName.isNotEmpty ? enteredName : existingName;
@@ -262,6 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
         name.text = fullName;
         phone.text = savedNumber;
         selectedRole = role;
+        roleChosen = true;
       });
     }
   }
@@ -336,16 +346,29 @@ class _HomeScreenState extends State<HomeScreen> {
       message = '';
     });
     try {
-      final result = await db!
-          .from('rides')
-          .select()
-          .inFilter('status', ['active', 'full'])
-          .ilike('origin', '%${from.text.trim()}%')
-          .ilike('destination', '%${to.text.trim()}%')
-          .gte('departure_at', DateTime.now().toUtc().toIso8601String())
-          .order('departure_at');
-      final rideRows = List<Map<String, dynamic>>.from(result).where((ride) =>
-          selectedSearchVehicleType == 'all' || ride['vehicle_type'] == selectedSearchVehicleType).toList();
+      final result = await db!.rpc('search_route_segment_matches', params: {
+        'p_origin': from.text.trim(),
+        'p_destination': to.text.trim(),
+        'p_min_seats': 1,
+      });
+      final rideRows = List<Map<String, dynamic>>.from(result)
+          .where((ride) => selectedSearchVehicleType == 'all' ||
+              ride['vehicle_type'] == selectedSearchVehicleType)
+          .map((ride) {
+            final row = Map<String, dynamic>.from(ride);
+            row['id'] = row['ride_id'];
+            row['available_seats'] = row['segment_available_seats'];
+            row['fare_per_seat'] = row['segment_fare'];
+            return row;
+          }).toList();
+      // Show the lowest driver-set fare first, then earlier departures.
+      rideRows.sort((a, b) {
+        final fareA = (num.tryParse(a['fare_per_seat']?.toString() ?? '') ?? double.infinity).toDouble();
+        final fareB = (num.tryParse(b['fare_per_seat']?.toString() ?? '') ?? double.infinity).toDouble();
+        final byFare = fareA.compareTo(fareB);
+        if (byFare != 0) return byFare;
+        return (a['departure_at'] ?? '').toString().compareTo((b['departure_at'] ?? '').toString());
+      });
       final driverIds = rideRows.map((ride) => ride['driver_id']?.toString()).whereType<String>().toSet().toList();
       final publicDrivers = driverIds.isEmpty ? <Map<String, dynamic>>[] : List<Map<String, dynamic>>.from(await db!.rpc('search_driver_public_profiles', params: {'p_driver_ids': driverIds}));
       final driversById = {for (final driver in publicDrivers) driver['id'].toString(): driver};
@@ -358,6 +381,112 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _setPickupFromCurrentLocation() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+        if (mounted) setState(() => message = 'Allow location permission to use your current pickup point.');
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.high));
+      final marks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      if (marks.isNotEmpty) {
+        final place = marks.first;
+        final parts = <String>[
+          if ((place.subLocality ?? '').trim().isNotEmpty) place.subLocality!.trim(),
+          if ((place.locality ?? '').trim().isNotEmpty) place.locality!.trim(),
+          if ((place.subAdministrativeArea ?? '').trim().isNotEmpty && (place.subAdministrativeArea ?? '').trim() != (place.locality ?? '').trim()) place.subAdministrativeArea!.trim(),
+        ];
+        final label = parts.toSet().join(', ');
+        if (label.isNotEmpty && mounted) setState(() => from.text = label);
+      }
+    } catch (_) {
+      // Keep the existing pickup text if reverse geocoding is unavailable.
+    }
+  }
+
+  String _destinationFromSpeech(String spoken) {
+    var value = spoken.trim();
+    var lower = value.toLowerCase();
+    final fromTo = lower.startsWith('from ') ? lower.indexOf(' to ') : -1;
+    final seAt = lower.indexOf(' se ');
+    if (fromTo > 0) {
+      from.text = value.substring(5, fromTo).trim();
+      value = value.substring(fromTo + 4).trim();
+    } else if (seAt > 0) {
+      from.text = value.substring(0, seAt).trim();
+      value = value.substring(seAt + 4).trim();
+    } else {
+      const prefixes = ['i want to travel to ', 'i want to go to ', 'take me to ', 'mujhe ', 'please ', 'mare ', 'મારે ', 'मुझे ', 'go to ', 'to '];
+      for (final prefix in prefixes) {
+        if (lower.startsWith(prefix)) { value = value.substring(prefix.length).trim(); break; }
+      }
+    }
+    lower = value.toLowerCase();
+    const suffixes = ['jana hai', 'jaana hai', 'javu chhe', 'જવું છે', 'जाना है', 'जाना चाहता हूँ', 'jana', 'jaana', 'javu'];
+    for (final suffix in suffixes) {
+      if (lower.endsWith(suffix)) { value = value.substring(0, value.length - suffix.length).trim(); lower = value.toLowerCase(); break; }
+    }
+    for (final suffix in [' by car', ' in a car', ' car', ' taxi', ' bike']) {
+      if (lower.endsWith(suffix)) { value = value.substring(0, value.length - suffix.length).trim(); lower = value.toLowerCase(); }
+    }
+    return value.replaceAll(',', '').trim();
+  }
+
+  Future<void> _handleVoiceBooking(String spoken) async {
+    if (spoken.trim().isEmpty) return;
+    final lower = spoken.toLowerCase();
+    final destination = _destinationFromSpeech(spoken);
+    if (destination.isEmpty) {
+      if (mounted) setState(() => _voiceStatus = 'Destination samajh nahi aaya. Dobara boliye.');
+      return;
+    }
+    if (mounted) {
+      setState(() {
+        to.text = destination;
+        selectedSearchVehicleType = lower.contains('bike') ? 'bike' : 'car';
+        selectedRole = 'passenger';
+        tab = 1;
+        _voiceStatus = 'Searching ' + (selectedSearchVehicleType == 'bike' ? 'bike' : 'car') + ' rides to ' + destination + '…';
+        message = 'Voice request: ' + destination;
+      });
+    }
+    await search();
+    if (mounted && rides.isEmpty) {
+      setState(() => _voiceStatus = 'No scheduled ride found. Opening Instant Ride…');
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => InstantTaxiScreen(
+          configured: widget.configured,
+          initialDestination: destination,
+          initialVehicleType: selectedSearchVehicleType == 'bike' ? 'bike' : 'car',
+        ),
+      ));
+    } else if (mounted) {
+      setState(() => _voiceStatus = 'Matching scheduled rides found. Cheapest options are shown first. Instant Ride is also available below.');
+    }
+  }
+
+  Future<void> _startVoiceBooking() async {
+    if (_voiceListening) { await _speech.stop(); if (mounted) setState(() => _voiceListening = false); return; }
+    await _setPickupFromCurrentLocation();
+    final available = await _speech.initialize(
+      onStatus: (status) { if (mounted && (status == 'notListening' || status == 'done')) setState(() => _voiceListening = false); },
+      onError: (error) { if (mounted) setState(() { _voiceListening = false; _voiceStatus = 'Voice unavailable. Check microphone permission and phone speech settings.'; }); },
+    );
+    if (!available) { if (mounted) setState(() => _voiceStatus = 'Speech recognition is unavailable on this phone.'); return; }
+    if (mounted) setState(() { _voiceListening = true; _voiceText = ''; _voiceStatus = 'Listening… Boliye, kahan jaana hai?'; });
+    await _speech.listen(
+      listenFor: const Duration(seconds: 25),
+      pauseFor: const Duration(seconds: 3),
+      partialResults: true,
+      onResult: (result) {
+        if (!mounted) return;
+        setState(() { _voiceText = result.recognizedWords; _voiceStatus = result.finalResult ? 'Samajh gaya: ' + result.recognizedWords : 'Listening: ' + result.recognizedWords; });
+        if (result.finalResult) { _speech.stop(); setState(() => _voiceListening = false); _handleVoiceBooking(result.recognizedWords); }
+      },
+    );
+  }
   Future<void> publish() async {
     if (db?.auth.currentUser == null) {
       setState(() => message = 'Please sign in first.');
@@ -385,24 +514,59 @@ class _HomeScreenState extends State<HomeScreen> {
           .select('role')
           .eq('id', db!.auth.currentUser!.id)
           .single();
-      if (!['driver', 'admin'].contains(profile['role'])) {
+      if (profile['role'] != 'driver') {
         setState(() => message =
             'Your account is a passenger. Create or use a driver account to publish a ride.');
         return;
       }
-      await db!.from('rides').insert({
-        'driver_id': db!.auth.currentUser!.id,
-        'vehicle_type': selectedVehicleType,
-        'vehicle_name': vehicle.text.trim(),
-        'vehicle_number': number.text.trim(),
-        'origin': from.text.trim(),
-        'destination': to.text.trim(),
-        'departure_at': departure.toUtc().toIso8601String(),
-        'total_seats': totalSeats,
-        'available_seats': totalSeats,
-        'fare_per_seat': farePerSeat,
+      final intermediateStops = routeStops.text
+          .split(',')
+          .map((stop) => stop.trim())
+          .where((stop) => stop.isNotEmpty)
+          .toList();
+      final timeLabels = routeStopTimes.text.trim().isEmpty
+          ? <String>[]
+          : routeStopTimes.text.split(',').map((value) => value.trim()).toList();
+      if (timeLabels.isNotEmpty && timeLabels.length != intermediateStops.length) {
+        setState(() => message = 'Enter one arrival time for each intermediate stop, in the same order.');
+        return;
+      }
+      final arrivalTimes = <String>[];
+      DateTime previousArrival = departure;
+      for (final label in timeLabels) {
+        final parts = label.split(':');
+        if (parts.length != 2) {
+          setState(() => message = 'Use 24-hour arrival times like 18:30, 21:00.');
+          return;
+        }
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+          setState(() => message = 'Check stop arrival times. Use HH:mm format.');
+          return;
+        }
+        var arrival = DateTime(departure.year, departure.month, departure.day, hour, minute);
+        while (arrival.isBefore(previousArrival)) {
+          arrival = arrival.add(const Duration(days: 1));
+        }
+        previousArrival = arrival;
+        arrivalTimes.add(arrival.toUtc().toIso8601String());
+      }
+      await db!.rpc('publish_route_ride', params: {
+        'p_vehicle_type': selectedVehicleType,
+        'p_vehicle_name': vehicle.text.trim(),
+        'p_vehicle_number': number.text.trim(),
+        'p_origin': from.text.trim(),
+        'p_destination': to.text.trim(),
+        'p_departure_at': departure.toUtc().toIso8601String(),
+        'p_total_seats': totalSeats,
+        'p_fare_per_seat': farePerSeat,
+        'p_intermediate_stops': intermediateStops,
+        'p_intermediate_arrivals': arrivalTimes,
       });
-      if (mounted) setState(() => message = 'Ride published.');
+      routeStops.clear();
+      routeStopTimes.clear();
+      if (mounted) setState(() => message = 'Route-sharing ride published with intermediate stops.');
     } catch (error) {
       if (mounted) setState(() => message = error.toString());
     }
@@ -411,6 +575,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> book(Map<String, dynamic> ride) async {
     final rideId = ride['id'] as String;
     final availableSeats = (ride['available_seats'] as num?)?.toInt() ?? 0;
+    final stopRows = List<Map<String, dynamic>>.from(await db!
+        .from('ride_stops').select('stop_order,location_name')
+        .eq('ride_id', rideId).order('stop_order'));
+    if (stopRows.length < 2) {
+      if (mounted) setState(() => message = 'This ride route is incomplete. Please refresh and try another ride.');
+      return;
+    }
+    int selectedPickup = (ride['pickup_stop_order'] as num?)?.toInt() ?? 0;
+    int selectedDropoff = (ride['dropoff_stop_order'] as num?)?.toInt() ?? stopRows.last['stop_order'] as int;
+    if (selectedPickup >= selectedDropoff) {
+      selectedPickup = 0;
+      selectedDropoff = (stopRows.last['stop_order'] as num).toInt();
+    }
     if (availableSeats < 1) {
       setState(() => message = 'Sorry, all seats on this ride are booked.');
       return;
@@ -418,7 +595,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final vpa = TextEditingController();
     int selectedSeats = 1;
     String method = 'cash';
-    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();    final choice = await showDialog<bool>(
+    final farePerSeat = (num.tryParse(ride['fare_per_seat'].toString()) ?? 0).toDouble();
+    final choice = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
@@ -429,6 +607,9 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('$availableSeats seat(s) available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green)),
+                const SizedBox(height: 10),
+                Text('Pickup: ${stopRows.firstWhere((stop) => (stop['stop_order'] as num).toInt() == selectedPickup)['location_name']}'),
+                Text('Drop-off: ${stopRows.firstWhere((stop) => (stop['stop_order'] as num).toInt() == selectedDropoff)['location_name']}'),
                 const SizedBox(height: 10),
                 const Text('How many seats do you need?'),
                 Row(
@@ -493,11 +674,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
     try {
-      // The database RPC locks the ride row and rechecks remaining seats,
-      // so two passengers cannot reserve the same final seat simultaneously.
+      // Server-side booking locks the ride and checks every overlapping
+      // route segment, preventing two passengers from taking the same seat.
       final bookingId = await db!.rpc(
-        'create_booking',
-        params: {'p_ride_id': rideId, 'p_seats': selectedSeats},
+        'create_route_segment_booking',
+        params: {
+          'p_ride_id': rideId,
+          'p_pickup_stop_order': selectedPickup,
+          'p_dropoff_stop_order': selectedDropoff,
+          'p_seats': selectedSeats,
+        },
       ) as String;
       await db!.rpc('set_my_booking_payment_method', params: {
         'p_booking_id': bookingId,
@@ -545,6 +731,9 @@ class _HomeScreenState extends State<HomeScreen> {
     number.dispose();
     fare.dispose();
     seats.dispose();
+    routeStops.dispose();
+    routeStopTimes.dispose();
+    _speech.cancel();
     super.dispose();
   }
 
@@ -564,16 +753,36 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               )
-            : db!.auth.currentUser == null
-                ? _buildRegistrationScreen()
-                : IndexedStack(
-                    index: tab,
-                    children: [
-                      _buildHomeTab(),
-                      _buildRidesTab(),
-                      const BookingHistoryScreen(),
-                      _buildProfileTab(),
-                    ],
+            : db!.auth.currentUser == null && !roleChosen
+                ? _buildRoleEntryScreen()
+                : db!.auth.currentUser == null
+                    ? _buildRegistrationScreen()
+                    : AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 420),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.035, 0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      ));
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(tab),
+                      child: [
+                        _buildHomeTab(),
+                        _buildRidesTab(),
+                        const BookingHistoryScreen(),
+                        _buildProfileTab(),
+                      ][tab],
+                    ),
                   ),
         bottomNavigationBar: widget.configured && db!.auth.currentUser != null
             ? NavigationBar(
@@ -582,22 +791,165 @@ class _HomeScreenState extends State<HomeScreen> {
                   tab = index;
                   message = '';
                 }),
-                destinations: const [
-                  NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-                  NavigationDestination(icon: Icon(Icons.route_outlined), selectedIcon: Icon(Icons.route), label: 'Rides'),
-                  NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'My Rides'),
-                  NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+                destinations: [
+                  NavigationDestination(
+                    icon: Icon(selectedRole == 'driver' ? Icons.dashboard_outlined : Icons.home_outlined),
+                    selectedIcon: Icon(selectedRole == 'driver' ? Icons.dashboard : Icons.home),
+                    label: selectedRole == 'driver' ? 'Driver' : 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(selectedRole == 'driver' ? Icons.add_road_outlined : Icons.search_rounded),
+                    selectedIcon: Icon(selectedRole == 'driver' ? Icons.add_road : Icons.search),
+                    label: selectedRole == 'driver' ? 'Offer Ride' : 'Find Ride',
+                  ),
+                  const NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'My Rides'),
+                  const NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
                 ],
               )
             : null,
       );
 
+  Widget _buildRoleEntryScreen() => SafeArea(
+    child: Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(22),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            const TipCarBrand(),
+            const SizedBox(height: 28),
+            const Text('How will you use Tip Car?', textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: tipCarNavy)),
+            const SizedBox(height: 8),
+            const Text('Choose your side. You can switch roles later from Profile.',
+              textAlign: TextAlign.center, style: TextStyle(color: Color(0xff718096))),
+            const SizedBox(height: 24),
+            _roleChoiceCard(role: 'passenger', title: 'Customer',
+              subtitle: 'Book a bike or car and find rides.', icon: Icons.person_pin_circle_rounded,
+              colors: const [Color(0xff174d91), Color(0xff15b5b3)]),
+            const SizedBox(height: 14),
+            _roleChoiceCard(role: 'driver', title: 'Driver',
+              subtitle: 'Accept trips and offer your available seats.', icon: Icons.directions_car_filled_rounded,
+              colors: const [Color(0xff0b1530), Color(0xffd97706)]),
+            const SizedBox(height: 18),
+            FilledButton(
+              onPressed: () => setState(() => roleChosen = true),
+              style: FilledButton.styleFrom(backgroundColor: tipCarNavy, padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ]),
+        ),
+      ),
+    ),
+  );
+
+  Widget _roleChoiceCard({
+    required String role, required String title, required String subtitle,
+    required IconData icon, required List<Color> colors,
+  }) {
+    final selected = selectedRole == role;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.96, end: 1), duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => setState(() => selectedRole = role),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220), padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: selected ? const Color(0xffffb02e) : Colors.white24, width: selected ? 3 : 1),
+              boxShadow: [BoxShadow(color: colors.first.withValues(alpha: .18), blurRadius: 18, offset: const Offset(0, 8))],
+            ),
+            child: Row(children: [
+              CircleAvatar(radius: 27, backgroundColor: Colors.white.withValues(alpha: .16), child: Icon(icon, color: Colors.white, size: 29)),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              ])),
+              Icon(selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: selected ? const Color(0xffffb02e) : Colors.white70, size: 25),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDriverHomeTab() => ListView(
+    padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+    children: [
+      TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.94, end: 1), duration: const Duration(milliseconds: 650),
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) => Transform.scale(scale: scale, child: child),
+        child: Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(26),
+            gradient: const LinearGradient(
+              colors: [Color(0xff0b1530), Color(0xff174d91), Color(0xffd97706)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight),
+            boxShadow: const [BoxShadow(color: Color(0x24102a56), blurRadius: 22, offset: Offset(0, 10))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Row(children: [
+              Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 27),
+              SizedBox(width: 9),
+              Text('TIP CAR DRIVER', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, letterSpacing: 1.3)),
+            ]),
+            const SizedBox(height: 24),
+            const Text('Your next ride\nstarts here.', style: TextStyle(color: Colors.white, fontSize: 29, height: 1.08, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            const Text('Manage your trips, share your route and help passengers travel.',
+              style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+          ]),
+        ),
+      ),
+      const SizedBox(height: 22),
+      const Text('Driver tools', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Color(0xff0b1530))),
+      const SizedBox(height: 12),
+      _featureTile(Icons.add_road_rounded, 'Offer a scheduled ride', 'Publish your route and available seats',
+        const Color(0xfffff1e5), const Color(0xffd97706), () => setState(() => tab = 1)),
+      const SizedBox(height: 10),
+      _featureTile(Icons.local_taxi_rounded, 'Instant Bike / Car', 'Go online and manage instant trip requests',
+        const Color(0xffeaf2ff), const Color(0xff174d91), () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => InstantTaxiScreen(configured: widget.configured)))),
+      const SizedBox(height: 10),
+      _featureTile(Icons.emoji_events_rounded, 'Driver benefits', 'Track your 1,000-ride insurance progress',
+        const Color(0xfff2edff), const Color(0xff7052a3), () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => DriverBenefitsScreen(configured: widget.configured)))),
+      const SizedBox(height: 10),
+      _featureTile(Icons.receipt_long_rounded, 'My trips', 'See your booking and trip activity',
+        const Color(0xffe8f7f0), const Color(0xff15b5b3), () => setState(() => tab = 2)),
+      if (message.isNotEmpty)
+        Padding(padding: const EdgeInsets.all(12), child: Text(message, style: const TextStyle(color: Colors.blue))),
+    ],
+  );
+
   Widget _buildHomeTab() {
+    if (selectedRole == 'driver') return _buildDriverHomeTab();
     final signedIn = db?.auth.currentUser != null;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       children: [
-        Container(
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0.94, end: 1),
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeOutBack,
+          builder: (context, scale, child) => Transform.scale(
+            scale: scale,
+            alignment: Alignment.topCenter,
+            child: child,
+          ),
+          child: Container(
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
@@ -643,6 +995,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ]),
             ],
           ),
+          ),
         ),
         const SizedBox(height: 18),
         Row(children: [
@@ -655,6 +1008,26 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(children: [
+              Container(width: double.infinity, padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: const Color(0xff0b1530), borderRadius: BorderRadius.circular(18)),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  const Text('BOLIYE AUR RIDE BOOK KARIYE', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: .5)),
+                  const SizedBox(height: 5),
+                  const Text('Gujarati, Hindi ya apni phone language mein boliye', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                  const SizedBox(height: 12),
+                  SizedBox(height: 58, child: FilledButton.icon(
+                    onPressed: _startVoiceBooking,
+                    style: FilledButton.styleFrom(backgroundColor: const Color(0xffffb02e), foregroundColor: const Color(0xff0b1530), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                    icon: Icon(_voiceListening ? Icons.mic : Icons.mic_none_rounded, size: 25),
+                    label: Text(_voiceListening ? 'SUN RAHE HAIN…' : 'MIC DABAKAR BOLIYE', style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: .4)),
+                  )),
+                  const SizedBox(height: 8),
+                  Text(_voiceText.isNotEmpty ? _voiceText : _voiceStatus, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                  const SizedBox(height: 5),
+                  const Text('Example: “Mujhe Rajkot jaana hai”', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                ]),
+              ),
+              const SizedBox(height: 14),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Column(children: [
                   const SizedBox(height: 15, child: Icon(Icons.radio_button_checked, color: Color(0xff15b5b3), size: 17)),
@@ -782,7 +1155,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (!mounted) return;
         setState(() {
           selectedRole = role;
-          tab = 1;
+          roleChosen = true;
+          tab = 0;
           message = 'Mode changed to ${role == 'driver' ? 'Driver' : 'Passenger'}.';
         });
       } catch (error) {
@@ -821,17 +1195,6 @@ class _HomeScreenState extends State<HomeScreen> {
             const Icon(Icons.directions_car_filled_rounded, color: Colors.white, size: 38),
           ]),
         ),        const SizedBox(height: 18),
-        SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 0, label: Text('Find rides'), icon: Icon(Icons.search)),
-            ButtonSegment(value: 1, label: Text('Publish ride'), icon: Icon(Icons.add_road)),
-          ],
-          selected: {tab == 1 && selectedRole == 'driver' ? 1 : 0},
-          onSelectionChanged: (selection) => setState(() {
-            selectedRole = selection.first == 1 ? 'driver' : 'passenger';
-            message = '';
-          }),
-        ),
         const SizedBox(height: 12),
         if (selectedRole == 'passenger') ..._buildRideSearch(),
         if (selectedRole == 'driver') ..._buildPublishRide(),
@@ -843,6 +1206,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
 
   Widget _buildProfileTab() {
     final user = db?.auth.currentUser;
@@ -957,10 +1321,18 @@ class _HomeScreenState extends State<HomeScreen> {
           final driverName = driver['full_name']?.toString().trim();
           return Card(margin: const EdgeInsets.only(top: 10), child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${ride['origin']} → ${ride['destination']}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            if ((ride['pickup_stop_order'] as num?)?.toInt() != 0 ||
+                (ride['dropoff_stop_order'] as num?)?.toInt() != 1)
+              Text('Your segment: ${from.text.trim()} → ${to.text.trim()}',
+                style: const TextStyle(color: Color(0xff174d91), fontWeight: FontWeight.w700)),
             const SizedBox(height: 7),
             Text('${ride['vehicle_type'] == 'bike' ? '🏍️ Bike Taxi' : ride['vehicle_type'] == 'car' ? '🚗 Car Taxi' : '🚌 Bus'} · ${ride['vehicle_name']} · ${ride['vehicle_number']}'),
             Row(children: [const Icon(Icons.event_seat_outlined, size: 18, color: Colors.green), const SizedBox(width: 6), Text('${ride['available_seats']} of ${ride['total_seats']} seats available', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.green))]),
             Text(DateFormat.yMMMd().add_jm().format(DateTime.parse(ride['departure_at']).toLocal())),
+            if (ride['pickup_planned_at'] != null)
+              Text('Pickup stop ETA: ${DateFormat.jm().format(DateTime.parse(ride['pickup_planned_at'].toString()).toLocal())}'),
+            if (ride['dropoff_planned_at'] != null)
+              Text('Drop-off expected: ${DateFormat.jm().format(DateTime.parse(ride['dropoff_planned_at'].toString()).toLocal())}'),
             const Divider(height: 20),
             Row(children: [CircleAvatar(radius: 23, backgroundColor: const Color(0xffeaf1ff), backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null, child: photoUrl.isEmpty ? const Icon(Icons.person, color: Color(0xff15b5b3)) : null), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text((driverName == null || driverName.isEmpty) ? 'Tip Car driver' : driverName, style: const TextStyle(fontWeight: FontWeight.w700)), const Text('Driver profile', style: TextStyle(fontSize: 12, color: Colors.blueGrey))])), Text('₹${ride['fare_per_seat']}', style: const TextStyle(fontWeight: FontWeight.w800))]),
             const SizedBox(height: 8),
@@ -996,9 +1368,25 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: const InputDecoration(labelText: 'Vehicle number'),
         ),
         TextField(
+          controller: routeStops,
+          decoration: const InputDecoration(
+            labelText: 'Intermediate stops (optional)',
+            hintText: 'Rajkot, Ahmedabad',
+            helperText: 'Enter stops in travel order, separated by commas.',
+          ),
+        ),
+        TextField(
+          controller: routeStopTimes,
+          decoration: const InputDecoration(
+            labelText: 'Arrival time at each stop (optional)',
+            hintText: '18:30, 21:00',
+            helperText: '24-hour HH:mm format, matching the stop order above.',
+          ),
+        ),
+        TextField(
           controller: fare,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Fare per seat (₹)'),
+          decoration: const InputDecoration(labelText: 'Fare per seat, per route leg (₹)'),
         ),
         TextField(
           controller: seats,

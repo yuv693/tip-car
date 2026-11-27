@@ -1,0 +1,45 @@
+name: Tip Car Owner Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [tipcar-separate-driver-app]
+    paths:
+      - 'owner_app/**'
+      - '.github/workflows/tipcar-owner-build.yml'
+
+jobs:
+  owner-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.38.10
+          channel: stable
+          cache: true
+      - name: Generate Android project
+        working-directory: owner_app
+        run: flutter create --platforms=android --project-name tip_car_owner .
+      - name: Install dependencies
+        working-directory: owner_app
+        run: flutter pub get
+      - name: Analyze
+        working-directory: owner_app
+        run: flutter analyze --no-fatal-infos
+      - name: Build owner debug APK
+        working-directory: owner_app
+        run: |
+          flutter build apk --debug --split-per-abi \
+            --dart-define=SUPABASE_URL=https://wrjddfpxhqhpvhdgpres.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=sb_publishable_vn72HbTxOfVmyJD2sRNQzg_UkNpdwsX
+      - name: Upload owner APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: tip-car-owner-debug-apks
+          path: owner_app/build/app/outputs/flutter-apk/app-*-debug.apk
+          if-no-files-found: error

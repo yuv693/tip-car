@@ -80,6 +80,36 @@ class TaxiRouteService {
     return quote;
   }
 
+  /// Road distance and driving ETA between two live GPS coordinates.
+  /// Uses OSRM's public demo endpoint; production scale needs a contracted routing provider.
+  static Future<({double distanceKm, double durationMinutes})> estimateLeg({
+    required LatLng from,
+    required LatLng to,
+  }) async {
+    final path = '/route/v1/driving/'
+        '${from.longitude},${from.latitude};${to.longitude},${to.latitude}';
+    final response = await _client.get(
+      Uri.https('router.project-osrm.org', path, {
+        'overview': 'false',
+        'steps': 'false',
+      }),
+      headers: {'User-Agent': 'TipCar/1.0 (https://github.com/yuv693/tip-car)'},
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw Exception('Live ETA service unavailable.');
+    }
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final routes = body['routes'] as List?;
+    if (body['code'] != 'Ok' || routes == null || routes.isEmpty) {
+      throw Exception('Could not calculate road ETA.');
+    }
+    final route = routes.first as Map<String, dynamic>;
+    return (
+      distanceKm: (route['distance'] as num).toDouble() / 1000,
+      durationMinutes: (route['duration'] as num).toDouble() / 60,
+    );
+  }
+
   static List<LatLng> _decode(String encoded) {
     final points = <LatLng>[];
     var index = 0, lat = 0, lon = 0;

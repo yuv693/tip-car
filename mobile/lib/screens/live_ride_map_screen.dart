@@ -12,7 +12,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class LiveRideMapScreen extends StatefulWidget {
   final String rideId;
   final bool isDriver;
-  const LiveRideMapScreen({super.key, required this.rideId, required this.isDriver});
+  final int? pickupStopOrder;
+  final int? dropoffStopOrder;
+  const LiveRideMapScreen({super.key, required this.rideId, required this.isDriver, this.pickupStopOrder, this.dropoffStopOrder});
   @override
   State<LiveRideMapScreen> createState() => _LiveRideMapScreenState();
 }
@@ -58,6 +60,20 @@ class _LiveRideMapScreenState extends State<LiveRideMapScreen> {
       _origin = ride['origin']?.toString() ?? 'Pickup';
       _dest = ride['destination']?.toString() ?? 'Destination';
       _vehicleType = ride['vehicle_type']?.toString() ?? 'car';
+      if (widget.pickupStopOrder != null && widget.dropoffStopOrder != null) {
+        final stops = await db.from('ride_stops')
+            .select('stop_order,location_name')
+            .eq('ride_id', widget.rideId)
+            .inFilter('stop_order', [widget.pickupStopOrder, widget.dropoffStopOrder]);
+        for (final stop in List<Map<String, dynamic>>.from(stops)) {
+          if ((stop['stop_order'] as num).toInt() == widget.pickupStopOrder) {
+            _origin = stop['location_name'].toString();
+          }
+          if ((stop['stop_order'] as num).toInt() == widget.dropoffStopOrder) {
+            _dest = stop['location_name'].toString();
+          }
+        }
+      }
       final points = await Future.wait([_geocode(_origin), _geocode(_dest)]);
       if (!mounted) return;
       setState(() { _pickup = points[0]; _destination = points[1]; _loading = false; });

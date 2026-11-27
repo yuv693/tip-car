@@ -28,7 +28,7 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
     try {
       final rows = await db
           .from('bookings')
-          .select('id, ride_id, passenger_id, seats, total_amount, status, payment_status, created_at, rides(origin, destination, departure_at, vehicle_name, vehicle_type, driver_id)')
+          .select('id, ride_id, passenger_id, seats, total_amount, status, payment_status, created_at, pickup_stop_order, dropoff_stop_order, rides(origin, destination, departure_at, vehicle_name, vehicle_type, driver_id)')
           .order('created_at', ascending: false);
       if (!mounted) return;
       setState(() => bookings = List<Map<String, dynamic>>.from(rows));
@@ -206,6 +206,8 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
                                       builder: (_) => LiveRideMapScreen(
                                         rideId: booking['ride_id'].toString(),
                                         isDriver: isDriver,
+                                        pickupStopOrder: (booking['pickup_stop_order'] as num?)?.toInt(),
+                                        dropoffStopOrder: (booking['dropoff_stop_order'] as num?)?.toInt(),
                                       ),
                                     ),
                                   ),
