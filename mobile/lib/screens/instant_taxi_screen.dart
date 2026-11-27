@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/taxi_route_service.dart';
 import '../services/push_notification_service.dart';
+import '../services/driver_tracking_service.dart';
 import 'alternative_ride_screen.dart';
 
 class InstantTaxiScreen extends StatefulWidget {
@@ -59,8 +60,6 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   DateTime? _lastEtaCalculation;
   bool _etaLoading = false;
   DateTime? _lastInboxRefresh;
-  StreamSubscription<Position>? _gps;
-  Timer? _heartbeat;
   StreamSubscription<List<Map<String, dynamic>>>? _requestStream;
   StreamSubscription<List<Map<String, dynamic>>>? _locationStream;
   String? _locationRequestId;
@@ -428,10 +427,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
           setState(() => _message = 'Complete or cancel your active ride before going offline.');
           return;
         }
-        await _gps?.cancel();
-        _gps = null;
-        _heartbeat?.cancel();
-        _heartbeat = null;
+        await TipCarDriverTrackingService.stop(userId!);
         await db.from('driver_presence').update({
           'online': false,
           'updated_at': DateTime.now().toUtc().toIso8601String(),
@@ -444,62 +440,31 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
   }
 
   Future<void> _startGps() async {
-    await _gps?.cancel();
-    _gps = Geolocator.getPositionStream(locationSettings: AndroidSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 15,
-      intervalDuration: const Duration(seconds: 10),
-      foregroundNotificationConfig: const ForegroundNotificationConfig(
-        notificationTitle: 'Tip Car driver online',
-        notificationText: 'Tip Car is sharing your location while you are online.',
-        notificationChannelName: 'Tip Car driver availability',
-        enableWakeLock: true,
-        setOngoing: true,
-      ),
-    )).listen((p) {
-      _updateDriverPosition(p).catchError((Object e) {
-        if (mounted) setState(() => _message = 'GPS update failed: $e');
-      });
-    }, onError: (Object e) {
-      if (mounted) {
-        setState(() { _sharing = false; _message = 'GPS stopped: $e'; });
-      }
-    });
-    if (mounted) setState(() => _sharing = true);
-    _heartbeat?.cancel();
-    _heartbeat = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (!_online || !_sharing || userId == null) return;
-      try {
-        await db.from('driver_presence').update({
-          'updated_at': DateTime.now().toUtc().toIso8601String(),
-        }).eq('driver_id', userId!);
-      } catch (e) {
-        if (mounted) setState(() => _message = 'Driver availability heartbeat failed: $e');
-      }
-    });
-  }
-
-  Future<void> _updateDriverPosition(Position p) async {
-    final point = LatLng(p.latitude, p.longitude);
-    await db.from('driver_presence').update({
-      'latitude': p.latitude,
-      'longitude': p.longitude,
-      'online': true,
-      'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('driver_id', userId!);
-    final active = _activeRequest;
-    if (active != null) {
-      await db.from('ride_request_locations').upsert({
-        'request_id': active['id'],
-        'driver_id': userId,
-        'latitude': p.latitude,
-        'longitude': p.longitude,
-        'updated_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'request_id');
+    try {
+      await TipCarDriverTrackingService.start(
+        userId!,
+        onPosition: (p) {
+          if (!mounted) return;
+          setState(() {
+            _myPosition = LatLng(p.latitude, p.longitude);
+            _sharing = true;
+          });
+          if (_incoming.isEmpty) _refreshDriverRequests();
+        },
+        onError: (error) {
+          if (mounted) {
+            setState(() {
+              _sharing = false;
+              _message = 'GPS stopped: $error';
+            });
+          }
+        },
+      );
+      if (mounted) setState(() => _sharing = true);
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not start background GPS: $e');
+      rethrow;
     }
-    if (!mounted) return;
-    setState(() => _myPosition = point);
-    if (_incoming.isEmpty) await _refreshDriverRequests();
   }
 
   Future<void> _advanceRide() async {
@@ -576,8 +541,7 @@ class _InstantTaxiScreenState extends State<InstantTaxiScreen> {
 
   @override
   void dispose() {
-    _gps?.cancel();
-    _heartbeat?.cancel();
+    TipCarDriverTrackingService.detach(userId);
     _requestStream?.cancel();
     _locationStream?.cancel();
     _offersStream?.cancel();
